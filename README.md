@@ -258,8 +258,8 @@ MIT — free to use, modify, and share.
 
 Built by **Tahmid Hossain Ankur**
 
-- GitHub: [@your-username](https://github.com/tahmidankur)
-- LinkedIn: [your-profile](https://linkedin.com/in/tahmidankur)
+- GitHub: [@tahmidankur](https://github.com/tahmidankur)
+- LinkedIn: [tahmidankur](https://linkedin.com/in/tahmidankur)
 
 ---
 
