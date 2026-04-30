@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>FarCare — Contacts</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .contact-card {
+      background:var(--surface); border-radius:var(--radius);
+      box-shadow:var(--shadow); margin:0 14px 10px;
+      padding:0 16px; overflow:hidden;
+    }
+    .contact-main {
+      display:flex; align-items:center; gap:12px;
+      padding:14px 0 12px;
+      border-bottom:1.5px solid var(--border);
+    }
+    .contact-main:last-child { border-bottom:none; }
+    .contact-info { flex:1; min-width:0; }
+    .contact-info .cn { font-size:16px; font-weight:800; }
+    .contact-info .cr { font-size:12px; color:var(--text-3); font-weight:600; margin-top:2px; }
+    .contact-info .cc { font-size:13px; color:var(--text-2); font-weight:600; margin-top:3px;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .contact-actions {
+      display:flex; flex-direction:column; gap:6px; padding:10px 0 14px;
+    }
+    .contact-actions-row { display:flex; gap:8px; }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <header class="page-header page">
+    <div class="title-block">
+      <h1>Contacts</h1>
+      <div class="subtitle" id="contact-count">—</div>
+    </div>
+    <div class="header-action">
+      <button class="btn btn-primary btn-sm" onclick="openAddSheet()">+ Add</button>
+    </div>
+  </header>
+
+  <!-- Contact list -->
+  <div id="contact-list"></div>
+
+  <!-- Bottom Nav -->
+  <nav class="bottom-nav">
+    <a href="index.html" class="nav-item" aria-label="Home">
+      <span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/><polyline points="9 21 9 12 15 12 15 21"/></svg></span>
+      <span class="nav-label">Home</span>
+    </a>
+    <a href="contacts.html" class="nav-item" aria-label="Contacts">
+      <span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+      <span class="nav-label">Contacts</span>
+    </a>
+    <a href="history.html" class="nav-item" aria-label="History">
+      <span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
+      <span class="nav-label">History</span>
+    </a>
+    <a href="settings.html" class="nav-item" aria-label="Settings">
+      <span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>
+      <span class="nav-label">Settings</span>
+    </a>
+  </nav>
+</div>
+
+<!-- =====================================================
+     ADD / EDIT CONTACT SHEET
+     ===================================================== -->
+<div id="contact-sheet-overlay" class="sheet-overlay" style="display:none">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h2 id="cs-title">Add Contact</h2>
+    <p class="sheet-sub" id="cs-sub">Save someone you'd like to check in with.</p>
+
+    <input type="hidden" id="cs-id">
+
+    <div class="form-group">
+      <label class="form-label">Their name</label>
+      <input class="form-input" id="cs-name" type="text" placeholder="e.g. Ammu">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Relationship</label>
+      <input class="form-input" id="cs-rel" type="text" placeholder="Mom, Dad, Sister, Friend…">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Their timezone</label>
+      <div id="cs-tz-wrap"></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Preferred messaging method</label>
+      <div class="method-selector" id="cs-method">
+        <button class="method-btn active" data-method="whatsapp" onclick="csSelectMethod(this)">
+          <span class="mb-ico">💬</span>WhatsApp
+        </button>
+        <button class="method-btn" data-method="email" onclick="csSelectMethod(this)">
+          <span class="mb-ico">✉️</span>Email
+        </button>
+      </div>
+    </div>
+    <div class="form-group" id="cs-phone-group">
+      <label class="form-label">WhatsApp number (with country code)</label>
+      <input class="form-input" id="cs-phone" type="tel" placeholder="+880 1XXX XXXXXX">
+    </div>
+    <div class="form-group" id="cs-email-group" style="display:none">
+      <label class="form-label">Email address</label>
+      <input class="form-input" id="cs-email" type="email" placeholder="parent@email.com">
+    </div>
+
+    <div style="display:flex; gap:10px; margin-top:8px">
+      <button class="btn btn-soft" onclick="closeSheet('contact-sheet-overlay')">Cancel</button>
+      <button class="btn btn-primary" style="flex:1" onclick="saveContact()">Save Contact</button>
+    </div>
+  </div>
+</div>
+
+<!-- =====================================================
+     DELETE CONFIRM SHEET
+     ===================================================== -->
+<div id="delete-sheet-overlay" class="sheet-overlay" style="display:none">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div style="text-align:center; padding:8px 0 20px">
+      <div style="font-size:44px; margin-bottom:10px">🗑️</div>
+      <h2 id="del-title">Delete Contact?</h2>
+      <p style="font-size:14px;color:var(--text-2);margin-top:6px;line-height:1.5">
+        This will remove them from your contacts.<br>
+        Your check-in history will be kept.
+      </p>
+    </div>
+    <input type="hidden" id="del-id">
+    <button class="btn btn-danger btn-full" onclick="confirmDelete()">Yes, Delete</button>
+    <button class="btn btn-soft btn-full mt-8" onclick="closeSheet('delete-sheet-overlay')">Cancel</button>
+  </div>
+</div>
+
+<!-- Quick check-in sheet (simplified) -->
+<div id="quick-ci-overlay" class="sheet-overlay" style="display:none">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h2>Quick Check-In</h2>
+    <p class="sheet-sub" id="qci-sub">Send a message to this contact.</p>
+    <div id="qci-contact-row" style="margin-bottom:16px"></div>
+    <div class="msg-preview-label" style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--text-3);margin-bottom:8px">Message</div>
+    <div id="qci-tpl-list"></div>
+    <button class="btn btn-soft btn-full mt-12" onclick="closeSheet('quick-ci-overlay')">Cancel</button>
+  </div>
+</div>
+
+<script src="storage.js"></script>
+<script>
+let csMethodSelected = 'whatsapp';
+
+window.addEventListener('DOMContentLoaded', () => {
+  initNav();
+  renderContacts();
+});
+
+/* ---- Render list ---- */
+function renderContacts() {
+  const contacts = Storage.getContacts();
+  const list     = document.getElementById('contact-list');
+  const count    = document.getElementById('contact-count');
+  count.textContent = contacts.length === 0 ? 'No contacts yet'
+    : contacts.length + ' contact' + (contacts.length !== 1 ? 's' : '');
+
+  if (!contacts.length) {
+    list.innerHTML = `
+      <div class="empty-state">
+        <div class="es-icon">👨‍👩‍👧</div>
+        <h3>No contacts yet</h3>
+        <p>Add the people you want to check in with — your parents, partner, or close friends.</p>
+        <button class="btn btn-primary" onclick="openAddSheet()">Add Your First Contact</button>
+      </div>`;
+    return;
+  }
+
+  list.innerHTML = contacts.map(c => {
+    const methodLabel = c.preferredMethod === 'whatsapp' ? '💬 WhatsApp' : '✉️ Email';
+    const detail = c.preferredMethod === 'whatsapp' ? (c.phone || 'No number') : (c.email || 'No email');
+    return `
+    <div class="contact-card" id="card-${c.id}">
+      <div class="contact-main">
+        <div class="avatar avatar-lg ${avatarColor(c.name)}">${initials(c.name)}</div>
+        <div class="contact-info">
+          <div class="cn">${c.name}</div>
+          <div class="cr">${c.relationship || 'Contact'}</div>
+          <div class="cc">${methodLabel} · ${detail}</div>
+        </div>
+      </div>
+      <div class="contact-actions">
+        <div class="contact-actions-row">
+          <button class="btn btn-safe btn-sm" style="flex:1" onclick="quickCheckin('${c.id}')">
+            💙 Check In
+          </button>
+          <button class="btn btn-ghost btn-sm" onclick="openEditSheet('${c.id}')">
+            ✏️ Edit
+          </button>
+          <button class="btn btn-soft btn-sm btn-icon" onclick="openDeleteSheet('${c.id}', '${c.name}')">
+            🗑️
+          </button>
+        </div>
+      </div>
+    </div>`}).join('');
+}
+
+/* ---- Add sheet ---- */
+function openAddSheet() {
+  document.getElementById('cs-title').textContent = 'Add Contact';
+  document.getElementById('cs-sub').textContent   = 'Save someone you'd like to check in with.';
+  document.getElementById('cs-id').value    = '';
+  document.getElementById('cs-name').value  = '';
+  document.getElementById('cs-rel').value   = '';
+  document.getElementById('cs-phone').value = '';
+  document.getElementById('cs-email').value = '';
+  document.getElementById('cs-tz-wrap').innerHTML = tzSelect('cs-tz', 'Asia/Dhaka');
+  csMethodSelected = 'whatsapp';
+  document.querySelectorAll('#cs-method .method-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.method === 'whatsapp'));
+  document.getElementById('cs-phone-group').style.display = '';
+  document.getElementById('cs-email-group').style.display = 'none';
+  openSheet('contact-sheet-overlay');
+}
+
+/* ---- Edit sheet ---- */
+function openEditSheet(id) {
+  const c = Storage.getContact(id);
+  if (!c) return;
+  document.getElementById('cs-title').textContent = 'Edit Contact';
+  document.getElementById('cs-sub').textContent   = 'Update details for ' + c.name;
+  document.getElementById('cs-id').value    = id;
+  document.getElementById('cs-name').value  = c.name  || '';
+  document.getElementById('cs-rel').value   = c.relationship || '';
+  document.getElementById('cs-phone').value = c.phone || '';
+  document.getElementById('cs-email').value = c.email || '';
+  document.getElementById('cs-tz-wrap').innerHTML = tzSelect('cs-tz', c.timezone || 'Asia/Dhaka');
+  csMethodSelected = c.preferredMethod || 'whatsapp';
+  document.querySelectorAll('#cs-method .method-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.method === csMethodSelected));
+  document.getElementById('cs-phone-group').style.display = csMethodSelected === 'whatsapp' ? '' : 'none';
+  document.getElementById('cs-email-group').style.display = csMethodSelected === 'email'    ? '' : 'none';
+  openSheet('contact-sheet-overlay');
+}
+
+function csSelectMethod(btn) {
+  csMethodSelected = btn.dataset.method;
+  document.querySelectorAll('#cs-method .method-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('cs-phone-group').style.display = csMethodSelected === 'whatsapp' ? '' : 'none';
+  document.getElementById('cs-email-group').style.display = csMethodSelected === 'email'    ? '' : 'none';
+}
+
+function saveContact() {
+  const name  = document.getElementById('cs-name').value.trim();
+  const rel   = document.getElementById('cs-rel').value.trim();
+  const tz    = document.getElementById('cs-tz').value;
+  const phone = document.getElementById('cs-phone').value.trim();
+  const email = document.getElementById('cs-email').value.trim();
+  const id    = document.getElementById('cs-id').value;
+
+  if (!name) { showToast('Please enter a name ✏️', 'error'); return; }
+  if (csMethodSelected === 'whatsapp' && !phone) { showToast('Please enter a phone number 📱', 'error'); return; }
+  if (csMethodSelected === 'email'    && !email) { showToast('Please enter an email address ✉️', 'error'); return; }
+
+  const data = { name, relationship:rel, timezone:tz, preferredMethod:csMethodSelected, phone, email };
+  if (id) {
+    Storage.updateContact(id, data);
+    showToast(name + ' updated ✅', 'success');
+  } else {
+    Storage.addContact(data);
+    showToast(name + ' added 💙', 'success');
+  }
+  closeSheet('contact-sheet-overlay');
+  renderContacts();
+}
+
+/* ---- Delete ---- */
+function openDeleteSheet(id, name) {
+  document.getElementById('del-id').value    = id;
+  document.getElementById('del-title').textContent = 'Delete ' + name + '?';
+  openSheet('delete-sheet-overlay');
+}
+
+function confirmDelete() {
+  const id = document.getElementById('del-id').value;
+  Storage.deleteContact(id);
+  closeSheet('delete-sheet-overlay');
+  showToast('Contact removed', 'default');
+  renderContacts();
+}
+
+/* ---- Quick check-in ---- */
+function quickCheckin(id) {
+  const contact   = Storage.getContact(id);
+  const templates = Storage.getTemplates();
+  if (!contact) return;
+
+  document.getElementById('qci-sub').textContent = 'Checking in with ' + contact.name;
+  document.getElementById('qci-contact-row').innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--surface-2);border-radius:12px">
+      <div class="avatar avatar-md ${avatarColor(contact.name)}">${initials(contact.name)}</div>
+      <div>
+        <div style="font-weight:800">${contact.name}</div>
+        <div style="font-size:12px;color:var(--text-3);font-weight:600">${contact.preferredMethod === 'whatsapp' ? '💬' : '✉️'} ${contact.preferredMethod}</div>
+      </div>
+    </div>`;
+
+  document.getElementById('qci-tpl-list').innerHTML = templates.map(t => `
+    <div class="list-item" style="cursor:pointer" onclick="sendQuickCheckin('${id}','${t.id}')">
+      <div style="flex:1;font-size:14px;font-weight:600;color:var(--text-2);line-height:1.45">${t.text}</div>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </div>`).join('');
+
+  openSheet('quick-ci-overlay');
+}
+
+function sendQuickCheckin(contactId, tplId) {
+  const contact  = Storage.getContact(contactId);
+  const template = Storage.getTemplates().find(t => t.id === tplId);
+  if (!contact || !template) return;
+  const msg = template.text;
+
+  if (contact.preferredMethod === 'whatsapp') {
+    const phone = contact.phone.replace(/\D/g,'');
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+  } else {
+    window.open(`mailto:${contact.email}?subject=${encodeURIComponent('FarCare Check-In')}&body=${encodeURIComponent(msg)}`, '_blank');
+  }
+  Storage.addHistory({ contactId, contactName:contact.name, message:msg, method:contact.preferredMethod });
+  closeSheet('quick-ci-overlay');
+  showToast('Check-in sent to ' + contact.name + ' 💙', 'success');
+}
+
+/* close sheet on overlay tap */
+document.addEventListener('click', e => {
+  ['contact-sheet-overlay','delete-sheet-overlay','quick-ci-overlay'].forEach(id => {
+    if (e.target === document.getElementById(id)) closeSheet(id);
+  });
+});
+</script>
+</body>
+</html>

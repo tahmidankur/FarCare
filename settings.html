@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>FarCare — Settings</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .section-title {
+      font-size:12px; font-weight:800; text-transform:uppercase;
+      letter-spacing:.08em; color:var(--text-3);
+      padding:16px 16px 8px;
+    }
+    .tpl-edit-input {
+      flex:1; border:none; background:transparent;
+      font-family:var(--font); font-size:13px; font-weight:600;
+      color:var(--text-2); outline:none; resize:none;
+      line-height:1.5; padding:2px 0;
+    }
+    .tpl-edit-input:focus { color:var(--text); }
+    .about-row {
+      display:flex; align-items:center; gap:10px;
+      padding:12px 0; border-bottom:1.5px solid var(--border);
+    }
+    .about-row:last-child { border-bottom:none; }
+    .about-label { font-size:14px; font-weight:600; color:var(--text-2); flex:1; }
+    .about-value { font-size:13px; color:var(--text-3); font-weight:700; }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <header class="page-header page">
+    <div class="title-block">
+      <h1>Settings</h1>
+    </div>
+  </header>
+
+  <!-- ===== PROFILE ===== -->
+  <div class="section-title">Profile</div>
+  <div class="card settings-card">
+    <div class="setting-row" onclick="openProfileSheet()" style="cursor:pointer">
+      <div class="setting-icon si-blue">👤</div>
+      <div class="setting-info">
+        <div class="s-label">Your Name</div>
+        <div class="s-sub" id="s-name-val">—</div>
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+    <div class="setting-row" onclick="openTimezoneSheet()" style="cursor:pointer">
+      <div class="setting-icon si-blue">🌍</div>
+      <div class="setting-info">
+        <div class="s-label">Your Timezone</div>
+        <div class="s-sub" id="s-mytz-val">—</div>
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+    <div class="setting-row" onclick="openTimezoneSheet()" style="cursor:pointer">
+      <div class="setting-icon si-green">🏠</div>
+      <div class="setting-info">
+        <div class="s-label">Family Timezone</div>
+        <div class="s-sub" id="s-famtz-val">—</div>
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+  </div>
+
+  <!-- ===== REMINDERS ===== -->
+  <div class="section-title">Reminders</div>
+  <div class="card settings-card">
+    <div class="setting-row">
+      <div class="setting-icon si-warm">🔔</div>
+      <div class="setting-info">
+        <div class="s-label">Daily Reminder</div>
+        <div class="s-sub" id="s-notif-val">—</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="notif-toggle" onchange="toggleNotifications(this)">
+        <div class="toggle-track"></div>
+        <div class="toggle-thumb"></div>
+      </label>
+    </div>
+    <div class="setting-row" id="reminder-time-row">
+      <div class="setting-icon si-warm">⏰</div>
+      <div class="setting-info">
+        <div class="s-label">Reminder Time</div>
+        <div class="s-sub">When should we remind you?</div>
+      </div>
+      <input type="time" id="reminder-time-input"
+        style="border:2px solid var(--border);border-radius:8px;padding:6px 10px;font-family:var(--font);font-size:13px;font-weight:700;color:var(--text);background:var(--surface);outline:none;cursor:pointer"
+        onchange="saveReminderTime(this.value)">
+    </div>
+    <div class="setting-row">
+      <div style="flex:1;padding:2px 0">
+        <div style="font-size:12px;color:var(--text-3);font-weight:600;line-height:1.5">
+          ⚠️ Reminders only fire while FarCare is open in your browser. For background reminders, a future update will add full PWA support.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TEMPLATES ===== -->
+  <div class="section-title">Message Templates</div>
+  <div class="card settings-card" id="templates-card">
+    <!-- filled by JS -->
+  </div>
+  <div style="padding:0 14px 4px">
+    <button class="btn btn-ghost btn-full btn-sm" onclick="addTemplate()">+ Add Template</button>
+  </div>
+
+  <!-- ===== DATA ===== -->
+  <div class="section-title">Data & Backup</div>
+  <div class="card settings-card">
+    <div class="setting-row" onclick="exportData()" style="cursor:pointer">
+      <div class="setting-icon si-purple">⬇️</div>
+      <div class="setting-info">
+        <div class="s-label">Export Data</div>
+        <div class="s-sub">Download a JSON backup of all your data</div>
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+    <div class="setting-row" onclick="document.getElementById('import-file').click()" style="cursor:pointer">
+      <div class="setting-icon si-purple">⬆️</div>
+      <div class="setting-info">
+        <div class="s-label">Import Data</div>
+        <div class="s-sub">Restore from a FarCare backup file</div>
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+    <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(this)">
+    <div class="setting-row" onclick="openResetSheet()" style="cursor:pointer">
+      <div class="setting-icon" style="background:#FEE2E2">🗑️</div>
+      <div class="setting-info">
+        <div class="s-label" style="color:#DC2626">Reset All Data</div>
+        <div class="s-sub">Remove all contacts, history and settings</div>
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+  </div>
+
+  <!-- ===== ABOUT ===== -->
+  <div class="section-title">About</div>
+  <div class="card settings-card" style="margin-bottom:20px">
+    <div class="about-row">
+      <span class="about-label">Version</span>
+      <span class="about-value">1.0.0</span>
+    </div>
+    <div class="about-row">
+      <span class="about-label">Built with</span>
+      <span class="about-value">HTML · CSS · JS</span>
+    </div>
+    <div class="about-row">
+      <span class="about-label">Data stored</span>
+      <span class="about-value">On this device only</span>
+    </div>
+    <div class="about-row" style="cursor:pointer" onclick="window.open('contacts.html')">
+      <span class="about-label">Contacts</span>
+      <span class="about-value" id="about-contacts">0</span>
+    </div>
+    <div class="about-row">
+      <span class="about-label">Check-ins logged</span>
+      <span class="about-value" id="about-history">0</span>
+    </div>
+  </div>
+
+  <!-- Bottom Nav -->
+  <nav class="bottom-nav">
+    <a href="index.html" class="nav-item"><span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/><polyline points="9 21 9 12 15 12 15 21"/></svg></span><span class="nav-label">Home</span></a>
+    <a href="contacts.html" class="nav-item"><span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span class="nav-label">Contacts</span></a>
+    <a href="history.html" class="nav-item"><span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span><span class="nav-label">History</span></a>
+    <a href="settings.html" class="nav-item"><span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span><span class="nav-label">Settings</span></a>
+  </nav>
+</div>
+
+<!-- Profile sheet -->
+<div id="profile-sheet-overlay" class="sheet-overlay" style="display:none">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h2>Your Profile</h2>
+    <p class="sheet-sub">Update your name.</p>
+    <div class="form-group">
+      <label class="form-label">Your name</label>
+      <input class="form-input" id="p-name" type="text" placeholder="Your first name">
+    </div>
+    <div style="display:flex;gap:10px;margin-top:4px">
+      <button class="btn btn-soft" onclick="closeSheet('profile-sheet-overlay')">Cancel</button>
+      <button class="btn btn-primary" style="flex:1" onclick="saveProfile()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Timezone sheet -->
+<div id="tz-sheet-overlay" class="sheet-overlay" style="display:none">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h2>Timezones</h2>
+    <p class="sheet-sub">Set where you are and where your family is.</p>
+    <div class="form-group">
+      <label class="form-label">Your timezone</label>
+      <div id="tz-my-wrap"></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Family timezone (shown on dashboard)</label>
+      <div id="tz-fam-wrap"></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:4px">
+      <button class="btn btn-soft" onclick="closeSheet('tz-sheet-overlay')">Cancel</button>
+      <button class="btn btn-primary" style="flex:1" onclick="saveTimezones()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Reset confirm sheet -->
+<div id="reset-sheet-overlay" class="sheet-overlay" style="display:none">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div style="text-align:center;padding:8px 0 22px">
+      <div style="font-size:44px;margin-bottom:10px">⚠️</div>
+      <h2>Reset all data?</h2>
+      <p style="font-size:14px;color:var(--text-2);margin-top:6px;line-height:1.5">
+        This will permanently delete your contacts, history, and settings. This cannot be undone.
+      </p>
+    </div>
+    <button class="btn btn-danger btn-full" onclick="resetAll()">Yes, Reset Everything</button>
+    <button class="btn btn-soft btn-full mt-8" onclick="closeSheet('reset-sheet-overlay')">Cancel</button>
+  </div>
+</div>
+
+<script src="storage.js"></script>
+<script>
+let notifScheduled = null;
+
+window.addEventListener('DOMContentLoaded', () => {
+  initNav();
+  renderSettings();
+});
+
+function renderSettings() {
+  const user     = Storage.getUser();
+  const settings = Storage.getSettings();
+
+  document.getElementById('s-name-val').textContent   = user.name || 'Not set';
+  document.getElementById('s-mytz-val').textContent   = tzLabel(user.myTimezone  || 'America/Toronto');
+  document.getElementById('s-famtz-val').textContent  = tzLabel(user.familyTimezone || 'Asia/Dhaka');
+  document.getElementById('s-notif-val').textContent  = settings.notificationsEnabled ? 'On' : 'Off';
+  document.getElementById('notif-toggle').checked     = settings.notificationsEnabled;
+  document.getElementById('reminder-time-input').value = settings.reminderTime || '09:00';
+  document.getElementById('about-contacts').textContent = Storage.getContacts().length;
+  document.getElementById('about-history').textContent  = Storage.getHistory().length;
+
+  renderTemplates();
+}
+
+function tzLabel(tz) {
+  const found = TIMEZONES.find(t => t.value === tz);
+  return found ? found.label : tz;
+}
+
+/* ---- Templates ---- */
+function renderTemplates() {
+  const templates = Storage.getTemplates();
+  const card      = document.getElementById('templates-card');
+  if (!templates.length) {
+    card.innerHTML = '<div class="text-muted" style="padding:14px 0">No templates. Add one below.</div>';
+    return;
+  }
+  card.innerHTML = templates.map((t, i) => `
+    <div class="tpl-item">
+      <textarea class="tpl-edit-input" rows="2"
+        onblur="saveTemplateText(${i}, this.value)">${t.text}</textarea>
+      <button class="btn-icon danger" onclick="deleteTemplate(${i})" title="Delete">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+      </button>
+    </div>`).join('');
+}
+
+function saveTemplateText(idx, text) {
+  const templates = Storage.getTemplates();
+  if (templates[idx]) {
+    templates[idx].text = text.trim() || templates[idx].text;
+    Storage.setTemplates(templates);
+  }
+}
+
+function addTemplate() {
+  const templates = Storage.getTemplates();
+  templates.push({ id: 't_' + Date.now(), text: 'New message — tap to edit', category: 'general' });
+  Storage.setTemplates(templates);
+  renderTemplates();
+  showToast('Template added ✅', 'success');
+}
+
+function deleteTemplate(idx) {
+  const templates = Storage.getTemplates();
+  if (templates.length <= 1) { showToast('Keep at least one template', 'error'); return; }
+  templates.splice(idx, 1);
+  Storage.setTemplates(templates);
+  renderTemplates();
+  showToast('Template removed', 'default');
+}
+
+/* ---- Profile sheet ---- */
+function openProfileSheet() {
+  document.getElementById('p-name').value = Storage.getUser().name || '';
+  openSheet('profile-sheet-overlay');
+}
+function saveProfile() {
+  const name = document.getElementById('p-name').value.trim();
+  if (!name) { showToast('Name cannot be empty', 'error'); return; }
+  Storage.setUser({ name });
+  closeSheet('profile-sheet-overlay');
+  renderSettings();
+  showToast('Name updated ✅', 'success');
+}
+
+/* ---- Timezone sheet ---- */
+function openTimezoneSheet() {
+  const user = Storage.getUser();
+  document.getElementById('tz-my-wrap').innerHTML  = tzSelect('tz-my',  user.myTimezone  || 'America/Toronto');
+  document.getElementById('tz-fam-wrap').innerHTML = tzSelect('tz-fam', user.familyTimezone || 'Asia/Dhaka');
+  openSheet('tz-sheet-overlay');
+}
+function saveTimezones() {
+  Storage.setUser({
+    myTimezone:     document.getElementById('tz-my').value,
+    familyTimezone: document.getElementById('tz-fam').value,
+  });
+  closeSheet('tz-sheet-overlay');
+  renderSettings();
+  showToast('Timezones saved ✅', 'success');
+}
+
+/* ---- Notifications ---- */
+function toggleNotifications(cb) {
+  if (!cb.checked) {
+    Storage.setSettings({ notificationsEnabled: false });
+    clearScheduledReminder();
+    document.getElementById('s-notif-val').textContent = 'Off';
+    showToast('Reminders off', 'default');
+    return;
+  }
+  Notification.requestPermission().then(perm => {
+    if (perm === 'granted') {
+      Storage.setSettings({ notificationsEnabled: true });
+      document.getElementById('s-notif-val').textContent = 'On';
+      scheduleReminder();
+      showToast('Reminders on 🔔', 'success');
+    } else {
+      cb.checked = false;
+      showToast('Permission denied by browser', 'error');
+    }
+  });
+}
+
+function saveReminderTime(val) {
+  Storage.setSettings({ reminderTime: val });
+  if (Storage.getSettings().notificationsEnabled) scheduleReminder();
+  showToast('Reminder time saved', 'success');
+}
+
+function scheduleReminder() {
+  clearScheduledReminder();
+  const settings = Storage.getSettings();
+  const [h, m]   = (settings.reminderTime || '09:00').split(':').map(Number);
+  const now  = new Date();
+  const next = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0);
+  if (next <= now) next.setDate(next.getDate() + 1);
+  const ms = next - now;
+  notifScheduled = setTimeout(() => {
+    const user = Storage.getUser();
+    new Notification('FarCare 💙', {
+      body: `Hey ${user.name || 'there'}! Time to check in with your family.`,
+      icon: 'assets/icon-192.png',
+    });
+    scheduleReminder(); // reschedule for next day
+  }, ms);
+}
+
+function clearScheduledReminder() {
+  if (notifScheduled) { clearTimeout(notifScheduled); notifScheduled = null; }
+}
+
+/* ---- Export / Import ---- */
+function exportData() {
+  const blob = new Blob([Storage.exportData()], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = 'farcare-backup-' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Backup downloaded ✅', 'success');
+}
+
+function importData(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      Storage.importData(e.target.result);
+      renderSettings();
+      showToast('Data imported ✅', 'success');
+    } catch {
+      showToast('Invalid backup file', 'error');
+    }
+    input.value = '';
+  };
+  reader.readAsText(file);
+}
+
+/* ---- Reset ---- */
+function openResetSheet() { openSheet('reset-sheet-overlay'); }
+function resetAll() {
+  Object.values(Storage.KEYS).forEach(k => localStorage.removeItem(k));
+  closeSheet('reset-sheet-overlay');
+  showToast('All data cleared', 'default');
+  setTimeout(() => { window.location = 'index.html'; }, 1200);
+}
+
+/* close on backdrop */
+document.addEventListener('click', e => {
+  ['profile-sheet-overlay','tz-sheet-overlay','reset-sheet-overlay'].forEach(id => {
+    if (e.target === document.getElementById(id)) closeSheet(id);
+  });
+});
+</script>
+</body>
+</html>
