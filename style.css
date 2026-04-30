@@ -676,6 +676,7 @@ p  { line-height:1.55; }
 
 /* safe area for newer phones */
 @supports (padding:max(0px)) {
-  .bottom-nav { padding-bottom: max(0px, env(safe-area-inset-bottom)); height:calc(var(--nav-h) + env(safe-area-inset-bottom)); }
-  .app        { padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom)); }
+  .bottom-nav  { padding-bottom: max(0px, env(safe-area-inset-bottom)); height:calc(var(--nav-h) + env(safe-area-inset-bottom)); }
+  .app         { padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom)); }
+  .page-header { padding-top: max(20px, calc(env(safe-area-inset-top) + 8px)); }
 }
