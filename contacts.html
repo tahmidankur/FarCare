@@ -208,7 +208,7 @@ function renderContacts() {
 /* ---- Add sheet ---- */
 function openAddSheet() {
   document.getElementById('cs-title').textContent = 'Add Contact';
-  document.getElementById('cs-sub').textContent   = 'Save someone you'd like to check in with.';
+  document.getElementById('cs-sub').textContent   = "Save someone you'd like to check in with.";
   document.getElementById('cs-id').value    = '';
   document.getElementById('cs-name').value  = '';
   document.getElementById('cs-rel').value   = '';
@@ -325,11 +325,14 @@ function sendQuickCheckin(contactId, tplId) {
     const phone = contact.phone.replace(/\D/g,'');
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
   } else {
-    window.open(`mailto:${contact.email}?subject=${encodeURIComponent('FarCare Check-In')}&body=${encodeURIComponent(msg)}`, '_blank');
+    window.location.href = `mailto:${contact.email}?subject=${encodeURIComponent('FarCare Check-In')}&body=${encodeURIComponent(msg)}`;
   }
   Storage.addHistory({ contactId, contactName:contact.name, message:msg, method:contact.preferredMethod });
   closeSheet('quick-ci-overlay');
-  showToast('Check-in sent to ' + contact.name + ' 💙', 'success');
+  const sentMsg = contact.preferredMethod === 'email'
+    ? 'Email app opened — just tap Send! 💙'
+    : 'Check-in sent to ' + contact.name + ' 💙';
+  showToast(sentMsg, 'success');
 }
 
 /* close sheet on overlay tap */

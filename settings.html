@@ -6,11 +6,6 @@
   <title>FarCare — Settings</title>
   <link rel="stylesheet" href="style.css">
   <style>
-    .section-title {
-      font-size:12px; font-weight:800; text-transform:uppercase;
-      letter-spacing:.08em; color:var(--text-3);
-      padding:16px 16px 8px;
-    }
     .tpl-edit-input {
       flex:1; border:none; background:transparent;
       font-family:var(--font); font-size:13px; font-weight:600;
@@ -37,8 +32,8 @@
   </header>
 
   <!-- ===== PROFILE ===== -->
-  <div class="section-title">Profile</div>
   <div class="card settings-card">
+    <div class="card-section-header">Profile</div>
     <div class="setting-row" onclick="openProfileSheet()" style="cursor:pointer">
       <div class="setting-icon si-blue">👤</div>
       <div class="setting-info">
@@ -66,8 +61,8 @@
   </div>
 
   <!-- ===== REMINDERS ===== -->
-  <div class="section-title">Reminders</div>
   <div class="card settings-card">
+    <div class="card-section-header">Reminders</div>
     <div class="setting-row">
       <div class="setting-icon si-warm">🔔</div>
       <div class="setting-info">
@@ -100,17 +95,17 @@
   </div>
 
   <!-- ===== TEMPLATES ===== -->
-  <div class="section-title">Message Templates</div>
-  <div class="card settings-card" id="templates-card">
-    <!-- filled by JS -->
-  </div>
-  <div style="padding:0 14px 4px">
-    <button class="btn btn-ghost btn-full btn-sm" onclick="addTemplate()">+ Add Template</button>
+  <div class="card settings-card" id="templates-card-wrap">
+    <div class="card-section-header">Message Templates</div>
+    <div id="templates-card"></div>
+    <div style="padding:10px 0 4px">
+      <button class="btn btn-ghost btn-full btn-sm" onclick="addTemplate()">+ Add Template</button>
+    </div>
   </div>
 
   <!-- ===== DATA ===== -->
-  <div class="section-title">Data & Backup</div>
   <div class="card settings-card">
+    <div class="card-section-header">Data &amp; Backup</div>
     <div class="setting-row" onclick="exportData()" style="cursor:pointer">
       <div class="setting-icon si-purple">⬇️</div>
       <div class="setting-info">
@@ -139,8 +134,8 @@
   </div>
 
   <!-- ===== ABOUT ===== -->
-  <div class="section-title">About</div>
   <div class="card settings-card" style="margin-bottom:20px">
+    <div class="card-section-header">About</div>
     <div class="about-row">
       <span class="about-label">Version</span>
       <span class="about-value">1.0.0</span>
