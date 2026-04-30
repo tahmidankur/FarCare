@@ -256,10 +256,10 @@ MIT — free to use, modify, and share.
 
 ## Author
 
-Built by **[Your Name]**
+Built by **Tahmid Hossain Ankur**
 
-- GitHub: [@your-username](https://github.com/your-username)
-- LinkedIn: [your-profile](https://linkedin.com/in/your-profile)
+- GitHub: [@your-username](https://github.com/tahmidankur)
+- LinkedIn: [your-profile](https://linkedin.com/in/tahmidankur)
 
 ---
 
