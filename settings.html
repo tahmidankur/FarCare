@@ -42,7 +42,7 @@
   <div class="card settings-card">
     <div class="card-section-header">Profile</div>
     <div class="setting-row" role="button" tabindex="0" onclick="openProfileSheet()" style="cursor:pointer">
-      <div class="setting-icon si-blue">👤</div>
+      <div class="setting-icon si-blue" data-icon="user"></div>
       <div class="setting-info">
         <div class="s-label">Your Name</div>
         <div class="s-sub" id="s-name-val">—</div>
@@ -50,7 +50,7 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
     </div>
     <div class="setting-row" role="button" tabindex="0" onclick="openTimezoneSheet()" style="cursor:pointer">
-      <div class="setting-icon si-blue">🌍</div>
+      <div class="setting-icon si-blue" data-icon="globe"></div>
       <div class="setting-info">
         <div class="s-label">Your Timezone</div>
         <div class="s-sub" id="s-mytz-val">—</div>
@@ -58,7 +58,7 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
     </div>
     <div class="setting-row" role="button" tabindex="0" onclick="openTimezoneSheet()" style="cursor:pointer">
-      <div class="setting-icon si-green">🏠</div>
+      <div class="setting-icon si-green" data-icon="home"></div>
       <div class="setting-info">
         <div class="s-label">Family Timezone</div>
         <div class="s-sub" id="s-famtz-val">—</div>
@@ -71,7 +71,7 @@
   <div class="card settings-card">
     <div class="card-section-header">Reminders</div>
     <div class="setting-row">
-      <div class="setting-icon si-warm">🔔</div>
+      <div class="setting-icon si-warm" data-icon="bell"></div>
       <div class="setting-info">
         <div class="s-label">Daily Reminder</div>
         <div class="s-sub" id="s-notif-val">—</div>
@@ -83,7 +83,7 @@
       </label>
     </div>
     <div class="setting-row" id="reminder-time-row">
-      <div class="setting-icon si-warm">⏰</div>
+      <div class="setting-icon si-warm" data-icon="clock"></div>
       <div class="setting-info">
         <div class="s-label">Reminder Time</div>
         <div class="s-sub">When should we remind you?</div>
@@ -95,7 +95,7 @@
     <div class="setting-row">
       <div style="flex:1;padding:2px 0">
         <div style="font-size:12px;color:var(--text-3);font-weight:600;line-height:1.5">
-          ⚠️ Reminders only fire while FarCare is open in your browser. For background reminders, a future update will add full PWA support.
+          <span data-icon="info" data-size="14" style="vertical-align:-2px"></span> Reminders only fire while FarCare is open in your browser. For background reminders, a future update will add full PWA support.
         </div>
       </div>
     </div>
@@ -114,7 +114,7 @@
   <div class="card settings-card">
     <div class="card-section-header">Data &amp; Backup</div>
     <div class="setting-row" role="button" tabindex="0" onclick="exportData()" style="cursor:pointer">
-      <div class="setting-icon si-purple">⬇️</div>
+      <div class="setting-icon si-blue" data-icon="download"></div>
       <div class="setting-info">
         <div class="s-label">Export Data</div>
         <div class="s-sub">Download a JSON backup of all your data</div>
@@ -122,7 +122,7 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
     </div>
     <div class="setting-row" role="button" tabindex="0" onclick="document.getElementById('import-file').click()" style="cursor:pointer">
-      <div class="setting-icon si-purple">⬆️</div>
+      <div class="setting-icon si-blue" data-icon="upload"></div>
       <div class="setting-info">
         <div class="s-label">Import Data</div>
         <div class="s-sub">Restore from a FarCare backup file</div>
@@ -131,7 +131,7 @@
     </div>
     <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(this)">
     <div class="setting-row" role="button" tabindex="0" onclick="openResetSheet()" style="cursor:pointer">
-      <div class="setting-icon" style="background:#FEE2E2">🗑️</div>
+      <div class="setting-icon" style="background:#FEE2E2;color:#DC2626" data-icon="trash"></div>
       <div class="setting-info">
         <div class="s-label" style="color:#DC2626">Reset All Data</div>
         <div class="s-sub">Remove all contacts, history and settings</div>
@@ -217,7 +217,7 @@
   <div class="sheet">
     <div class="sheet-handle"></div>
     <div style="text-align:center;padding:8px 0 22px">
-      <div style="font-size:44px;margin-bottom:10px">⚠️</div>
+      <div class="big-icon big-icon--warn" data-icon="alert" data-size="28"></div>
       <h2 id="reset-title">Reset all data?</h2>
       <p style="font-size:14px;color:var(--text-2);margin-top:6px;line-height:1.5">
         This will permanently delete your contacts, history, and settings. This cannot be undone.
@@ -287,7 +287,7 @@ function addTemplate() {
   templates.push({ id: 't_' + Date.now(), text: 'New message — tap to edit', category: 'general' });
   Storage.setTemplates(templates);
   renderTemplates();
-  showToast('Template added ✅', 'success');
+  showToast('Template added', 'success');
 }
 
 function deleteTemplate(idx) {
@@ -310,7 +310,7 @@ function saveProfile() {
   Storage.setUser({ name });
   closeSheet('profile-sheet-overlay');
   renderSettings();
-  showToast('Name updated ✅', 'success');
+  showToast('Name updated', 'success');
 }
 
 /* ---- Timezone sheet ---- */
@@ -327,7 +327,7 @@ function saveTimezones() {
   });
   closeSheet('tz-sheet-overlay');
   renderSettings();
-  showToast('Timezones saved ✅', 'success');
+  showToast('Timezones saved', 'success');
 }
 
 /* ---- Notifications ---- */
@@ -349,7 +349,7 @@ function toggleNotifications(cb) {
       Storage.setSettings({ notificationsEnabled: true });
       document.getElementById('s-notif-val').textContent = 'On';
       scheduleReminder();
-      showToast('Reminders on 🔔', 'success');
+      showToast('Reminders on', 'success');
     } else {
       cb.checked = false;
       showToast('Permission denied by browser', 'error');
@@ -374,7 +374,7 @@ function exportData() {
   a.download = 'farcare-backup-' + new Date().toISOString().slice(0,10) + '.json';
   a.click();
   URL.revokeObjectURL(url);
-  showToast('Backup downloaded ✅', 'success');
+  showToast('Backup downloaded', 'success');
 }
 
 function importData(input) {
@@ -385,7 +385,7 @@ function importData(input) {
     try {
       Storage.importData(e.target.result);
       renderSettings();
-      showToast('Data imported ✅', 'success');
+      showToast('Data imported', 'success');
     } catch {
       showToast('Invalid backup file', 'error');
     }

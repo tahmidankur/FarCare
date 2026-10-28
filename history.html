@@ -35,7 +35,7 @@
     <div style="width:1.5px; background:var(--border); align-self:stretch"></div>
     <div style="text-align:center; flex:1">
       <div style="font-size:24px; font-weight:900; color:var(--warm)" id="stat-streak">0</div>
-      <div class="text-muted" style="margin-top:2px">Day streak 🔥</div>
+      <div class="text-muted" style="margin-top:2px">Day streak</div>
     </div>
     <div style="width:1.5px; background:var(--border); align-self:stretch"></div>
     <div style="text-align:center; flex:1">
@@ -60,7 +60,7 @@
   <div class="sheet">
     <div class="sheet-handle"></div>
     <div style="text-align:center; padding:8px 0 22px">
-      <div style="font-size:44px; margin-bottom:10px">🗑️</div>
+      <div class="big-icon big-icon--danger" data-icon="trash" data-size="28"></div>
       <h2 id="clear-title">Clear all history?</h2>
       <p style="font-size:14px;color:var(--text-2);margin-top:6px;line-height:1.5">
         This removes all check-in records permanently.<br>Your contacts and templates are kept.
@@ -88,7 +88,7 @@ function renderHistory() {
   if (!history.length) {
     listEl.innerHTML = `
       <div class="empty-state">
-        <div class="es-icon">📋</div>
+        <div class="es-icon">${icon('list', 48)}</div>
         <h3>No history yet</h3>
         <p>Every check-in you send will appear here. Go tap that blue button!</p>
         <a href="index.html" class="btn btn-primary">Go to Dashboard</a>
@@ -125,7 +125,7 @@ function renderHistory() {
         <div class="hi-body">
           <div class="hi-meta">
             <span class="hi-name">${escapeHtml(h.contactName)}</span>
-            <span class="hi-method">${h.method === 'whatsapp' ? '💬 WhatsApp' : '✉️ Email'}</span>
+            <span class="hi-method">${methodLabel(h.method)}</span>
             <span class="hi-time">${timeAgo(h.timestamp)}</span>
           </div>
           <div class="hi-msg">${escapeHtml(h.message)}</div>

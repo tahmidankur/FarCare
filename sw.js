@@ -91,7 +91,7 @@ self.addEventListener('push', (e) => {
   const data = e.data?.json() ?? {};
   e.waitUntil(
     self.registration.showNotification(data.title || 'FarCare Reminder', {
-      body: data.body || "Don't forget to check in with your family today! 💙",
+      body: data.body || "Don't forget to check in with your family today!",
       icon: './icons/icon-192.png',
       badge: './icons/icon-192.png',
       tag: 'farcare-reminder',

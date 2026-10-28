@@ -58,7 +58,7 @@
     }
     .meth-btn:hover  { border-color:var(--primary); color:var(--primary); }
     .meth-btn.active { border-color:var(--primary); background:var(--primary-lt); color:var(--primary); }
-    .meth-btn .mi { font-size:18px; }
+    .meth-btn .mi { display:flex; }
   </style>
 </head>
 <body>
@@ -67,7 +67,7 @@
   <!-- ===== PAGE HEADER ===== -->
   <header class="page-header page">
     <div class="title-block">
-      <h1>FarCare 💙</h1>
+      <h1>FarCare</h1>
       <div class="subtitle" id="hdr-date">Loading…</div>
     </div>
     <div id="streak-area"></div>
@@ -92,7 +92,7 @@
 
   <!-- ===== MISSED BANNER ===== -->
   <div id="missed-banner" class="missed-banner" style="display:none">
-    <div class="mb-icon">⏰</div>
+    <div class="mb-icon" data-icon="clock" data-size="20"></div>
     <div class="mb-text">
       <span class="mb-bold" id="missed-title">Time for a check-in!</span>
       <span id="missed-sub">It's been a while since your last update.</span>
@@ -111,7 +111,7 @@
     <!-- big button -->
     <div class="checkin-wrap">
       <button class="checkin-btn" id="checkin-btn" onclick="openCheckinSheet()">
-        <span class="cb-icon">💙</span>
+        <span class="cb-icon" data-icon="heart" data-size="38"></span>
         <span class="cb-text">I'm&nbsp;Okay</span>
       </button>
     </div>
@@ -181,7 +181,7 @@
     <!-- Step 1: Your info -->
     <div class="step active" id="ob-step-0">
       <div style="text-align:center; margin-bottom:20px">
-        <div style="font-size:52px; margin-bottom:8px">💙</div>
+        <div class="big-icon" data-icon="heart" data-size="30"></div>
         <h2>Welcome to FarCare</h2>
         <p class="sheet-sub" style="margin-top:6px">Stay connected with the people who love you, no matter the distance.</p>
       </div>
@@ -216,10 +216,10 @@
         <div class="form-label" id="ob-method-label">How would you like to reach them?</div>
         <div class="method-selector" id="ob-method" role="group" aria-labelledby="ob-method-label">
           <button class="method-btn active" data-method="whatsapp" aria-pressed="true" onclick="selectMethod(this)">
-            <span class="mb-ico">💬</span>WhatsApp
+            <span class="mb-ico" data-icon="message" data-size="20"></span>WhatsApp
           </button>
           <button class="method-btn" data-method="email" aria-pressed="false" onclick="selectMethod(this)">
-            <span class="mb-ico">✉️</span>Email
+            <span class="mb-ico" data-icon="mail" data-size="20"></span>Email
           </button>
         </div>
       </div>
@@ -240,7 +240,7 @@
     <!-- Step 3: Done -->
     <div class="step" id="ob-step-2">
       <div style="text-align:center; padding:16px 0 24px">
-        <div style="font-size:60px; margin-bottom:12px">🎉</div>
+        <div class="big-icon big-icon--safe" data-icon="check" data-size="30"></div>
         <h2 style="margin-bottom:8px">You're all set!</h2>
         <p style="font-size:14px; color:var(--text-2); line-height:1.55">
           Tap the big blue button any time to send a quick<br>
@@ -250,7 +250,7 @@
       <div id="ob-summary" style="background:var(--surface-2); border-radius:var(--radius); padding:14px 16px; margin-bottom:20px">
         <!-- filled by JS -->
       </div>
-      <button class="btn btn-safe btn-full" onclick="finishOnboarding()">Start Using FarCare 💙</button>
+      <button class="btn btn-safe btn-full" onclick="finishOnboarding()">Start Using FarCare</button>
     </div>
   </div>
 </div>
@@ -285,7 +285,7 @@
     </div>
 
     <button class="btn btn-safe btn-full" onclick="confirmCheckin()">
-      Open & Send 💙
+      Open &amp; Send
     </button>
     <button class="btn btn-soft btn-full mt-8" onclick="closeSheet('checkin-overlay')">Cancel</button>
   </div>
@@ -343,7 +343,7 @@ let obStep = 0;
 function obNext(from) {
   if (from === 0) {
     const name = document.getElementById('ob-name').value.trim();
-    if (!name) { showToast('Please enter your name ✏️', 'error'); return; }
+    if (!name) { showToast('Please enter your name', 'error'); return; }
     const myTz  = document.getElementById('ob-mytz').value;
     Storage.setUser({ name, myTimezone: myTz });
     goObStep(1);
@@ -356,9 +356,9 @@ function obNext(from) {
     const method = obMethodSelected;
     const phone  = document.getElementById('ob-phone').value.trim();
     const email  = document.getElementById('ob-email').value.trim();
-    if (!cname) { showToast('Please enter a name ✏️', 'error'); return; }
-    if (method === 'whatsapp' && !phone) { showToast('Please enter their number 📱', 'error'); return; }
-    if (method === 'email'    && !email) { showToast('Please enter their email ✉️',  'error'); return; }
+    if (!cname) { showToast('Please enter a name', 'error'); return; }
+    if (method === 'whatsapp' && !phone) { showToast('Please enter their number', 'error'); return; }
+    if (method === 'email'    && !email) { showToast('Please enter their email',  'error'); return; }
     obContact = { name:cname, relationship:crel, timezone:famTz, preferredMethod:method, phone, email };
     // populate summary
     document.getElementById('ob-summary').innerHTML = `
@@ -366,7 +366,7 @@ function obNext(from) {
         <div class="avatar avatar-md ${avatarColor(cname)}">${initials(cname)}</div>
         <div>
           <div style="font-weight:800;font-size:15px">${escapeHtml(cname)}</div>
-          <div style="font-size:13px;color:var(--text-2);font-weight:600">${escapeHtml(crel || 'Family')} · ${method === 'whatsapp' ? '💬 WhatsApp' : '✉️ Email'}</div>
+          <div style="font-size:13px;color:var(--text-2);font-weight:600">${escapeHtml(crel || 'Family')} · ${methodLabel(method)}</div>
         </div>
       </div>`;
     goObStep(2);
@@ -418,7 +418,7 @@ function renderDashboard() {
   const streak = Storage.getStreak();
   const streakArea = document.getElementById('streak-area');
   streakArea.innerHTML = streak > 0
-    ? `<div class="streak-pill">🔥 ${streak} day${streak!==1?'s':''}</div>`
+    ? `<div class="streak-pill">${icon('flame', 14)} ${streak} day${streak!==1?'s':''}</div>`
     : '';
 
   // ---- Missed banner ----
@@ -428,7 +428,7 @@ function renderDashboard() {
   if (days !== null && days >= 1) {
     banner.style.display = 'flex';
     document.getElementById('missed-title').textContent = days === 1 ? 'You haven\'t checked in today' : `${days} days since your last check-in`;
-    document.getElementById('missed-sub').textContent   = 'Your family will be glad to hear from you 💛';
+    document.getElementById('missed-sub').textContent   = 'Your family will be glad to hear from you.';
   }
 
   // ---- Default active contact ----
@@ -447,7 +447,7 @@ function renderDashboard() {
   // ---- No contacts ----
   if (contacts.length === 0) {
     document.getElementById('checkin-btn').onclick = () => {
-      showToast('Add a contact first 👆', 'default');
+      showToast('Add a contact first', 'default');
       setTimeout(() => { window.location = 'contacts.html'; }, 1000);
     };
   }
@@ -541,7 +541,7 @@ let ciTplIndex = 0;
 function openCheckinSheet(tplIndex = 0) {
   const contacts = Storage.getContacts();
   if (!contacts.length) {
-    showToast('Add a contact first 👆', 'default');
+    showToast('Add a contact first', 'default');
     setTimeout(() => { window.location = 'contacts.html'; }, 1000);
     return;
   }
@@ -576,7 +576,7 @@ function openCheckinSheet(tplIndex = 0) {
 
 function openTplCheckin(tplId) {
   const contacts  = Storage.getContacts();
-  if (!contacts.length) { showToast('Add a contact first 👆'); return; }
+  if (!contacts.length) { showToast('Add a contact first'); return; }
   const idx = Storage.getTemplates().findIndex(t => t.id === tplId);
   openCheckinSheet(idx >= 0 ? idx : 0);
 }
@@ -599,14 +599,14 @@ function cycleTemplate() {
 function buildMethodBtns(contact) {
   const wrap = document.getElementById('ci-methods');
   const methods = [
-    { id:'whatsapp', label:'WhatsApp', icon:'💬' },
-    { id:'email',    label:'Email',    icon:'✉️'  },
+    { id:'whatsapp', label:'WhatsApp', icon:'message' },
+    { id:'email',    label:'Email',    icon:'mail' },
   ];
   selectedMethod = contact.preferredMethod || 'whatsapp';
   wrap.innerHTML = methods.map(m => `
     <button class="meth-btn ${m.id === selectedMethod ? 'active' : ''}"
             aria-pressed="${m.id === selectedMethod}" onclick="setMethod('${m.id}', this)">
-      <span class="mi">${m.icon}</span>${m.label}
+      <span class="mi">${icon(m.icon, 18)}</span>${m.label}
     </button>`).join('');
 }
 
@@ -627,11 +627,11 @@ function confirmCheckin() {
 
   if (selectedMethod === 'whatsapp') {
     const phone = (contact.phone || '').replace(/\D/g,'');
-    if (!phone) { showToast('No WhatsApp number saved 😕', 'error'); return; }
+    if (!phone) { showToast('No WhatsApp number saved', 'error'); return; }
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
   } else {
     const email = contact.email;
-    if (!email) { showToast('No email address saved 😕', 'error'); return; }
+    if (!email) { showToast('No email address saved', 'error'); return; }
     window.location.href = `mailto:${email}?subject=${encodeURIComponent('FarCare Check-In')}&body=${encodeURIComponent(msg)}`;
   }
 
@@ -649,7 +649,7 @@ function confirmCheckin() {
 function openAllTpls() {
   const templates = Storage.getTemplates();
   const contacts  = Storage.getContacts();
-  if (!contacts.length) { showToast('Add a contact first 👆'); return; }
+  if (!contacts.length) { showToast('Add a contact first'); return; }
   document.getElementById('tpl-sheet-list').innerHTML = templates.map(t => `
     <div class="list-item" style="cursor:pointer" role="button" tabindex="0"
          data-id="${escapeHtml(t.id)}" onclick="pickTplAndSend(this.dataset.id)">

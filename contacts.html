@@ -99,10 +99,10 @@
       <div class="form-label" id="cs-method-label">Preferred messaging method</div>
       <div class="method-selector" id="cs-method" role="group" aria-labelledby="cs-method-label">
         <button class="method-btn active" data-method="whatsapp" aria-pressed="true" onclick="csSelectMethod(this)">
-          <span class="mb-ico">💬</span>WhatsApp
+          <span class="mb-ico" data-icon="message" data-size="20"></span>WhatsApp
         </button>
         <button class="method-btn" data-method="email" aria-pressed="false" onclick="csSelectMethod(this)">
-          <span class="mb-ico">✉️</span>Email
+          <span class="mb-ico" data-icon="mail" data-size="20"></span>Email
         </button>
       </div>
     </div>
@@ -129,7 +129,7 @@
   <div class="sheet">
     <div class="sheet-handle"></div>
     <div style="text-align:center; padding:8px 0 20px">
-      <div style="font-size:44px; margin-bottom:10px">🗑️</div>
+      <div class="big-icon big-icon--danger" data-icon="trash" data-size="28"></div>
       <h2 id="del-title">Delete Contact?</h2>
       <p style="font-size:14px;color:var(--text-2);margin-top:6px;line-height:1.5">
         This will remove them from your contacts.<br>
@@ -175,7 +175,7 @@ function renderContacts() {
   if (!contacts.length) {
     list.innerHTML = `
       <div class="empty-state">
-        <div class="es-icon">👨‍👩‍👧</div>
+        <div class="es-icon">${icon('users', 48)}</div>
         <h3>No contacts yet</h3>
         <p>Add the people you want to check in with — your parents, partner, or close friends.</p>
         <button class="btn btn-primary" onclick="openAddSheet()">Add Your First Contact</button>
@@ -184,7 +184,6 @@ function renderContacts() {
   }
 
   list.innerHTML = contacts.map(c => {
-    const methodLabel = c.preferredMethod === 'whatsapp' ? '💬 WhatsApp' : '✉️ Email';
     const detail = c.preferredMethod === 'whatsapp' ? (c.phone || 'No number') : (c.email || 'No email');
     return `
     <div class="contact-card" data-id="${escapeHtml(c.id)}">
@@ -193,20 +192,20 @@ function renderContacts() {
         <div class="contact-info">
           <div class="cn">${escapeHtml(c.name)}</div>
           <div class="cr">${escapeHtml(c.relationship || 'Contact')}</div>
-          <div class="cc">${methodLabel} · ${escapeHtml(detail)}</div>
+          <div class="cc">${methodLabel(c.preferredMethod)} · ${escapeHtml(detail)}</div>
         </div>
       </div>
       <div class="contact-actions">
         <div class="contact-actions-row">
           <button class="btn btn-safe btn-sm" style="flex:1" onclick="quickCheckin(this.closest('.contact-card').dataset.id)">
-            💙 Check In
+            ${icon('heart', 15)} Check In
           </button>
           <button class="btn btn-ghost btn-sm" onclick="openEditSheet(this.closest('.contact-card').dataset.id)">
-            ✏️ Edit
+            ${icon('edit', 15)} Edit
           </button>
           <button class="btn btn-soft btn-sm btn-icon" aria-label="Delete ${escapeHtml(c.name)}"
                   onclick="openDeleteSheet(this.closest('.contact-card').dataset.id)">
-            🗑️
+            ${icon('trash', 16)}
           </button>
         </div>
       </div>
@@ -275,17 +274,17 @@ function saveContact() {
   const email = document.getElementById('cs-email').value.trim();
   const id    = document.getElementById('cs-id').value;
 
-  if (!name) { showToast('Please enter a name ✏️', 'error'); return; }
-  if (csMethodSelected === 'whatsapp' && !phone) { showToast('Please enter a phone number 📱', 'error'); return; }
-  if (csMethodSelected === 'email'    && !email) { showToast('Please enter an email address ✉️', 'error'); return; }
+  if (!name) { showToast('Please enter a name', 'error'); return; }
+  if (csMethodSelected === 'whatsapp' && !phone) { showToast('Please enter a phone number', 'error'); return; }
+  if (csMethodSelected === 'email'    && !email) { showToast('Please enter an email address', 'error'); return; }
 
   const data = { name, relationship:rel, timezone:tz, preferredMethod:csMethodSelected, phone, email };
   if (id) {
     Storage.updateContact(id, data);
-    showToast(name + ' updated ✅', 'success');
+    showToast(name + ' updated', 'success');
   } else {
     Storage.addContact(data);
-    showToast(name + ' added 💙', 'success');
+    showToast(name + ' added', 'success');
   }
   closeSheet('contact-sheet-overlay');
   renderContacts();
@@ -323,7 +322,7 @@ function quickCheckin(id) {
       <div class="avatar avatar-md ${avatarColor(contact.name)}">${initials(contact.name)}</div>
       <div>
         <div style="font-weight:800">${escapeHtml(contact.name)}</div>
-        <div style="font-size:12px;color:var(--text-3);font-weight:600">${contact.preferredMethod === 'whatsapp' ? '💬 WhatsApp' : '✉️ Email'}</div>
+        <div style="font-size:12px;color:var(--text-3);font-weight:600">${methodLabel(contact.preferredMethod)}</div>
       </div>
     </div>`;
 
@@ -345,10 +344,10 @@ function sendQuickCheckin(contactId, tplId) {
 
   if (contact.preferredMethod === 'whatsapp') {
     const phone = (contact.phone || '').replace(/\D/g,'');
-    if (!phone) { showToast('No WhatsApp number saved 😕', 'error'); return; }
+    if (!phone) { showToast('No WhatsApp number saved', 'error'); return; }
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
   } else {
-    if (!contact.email) { showToast('No email address saved 😕', 'error'); return; }
+    if (!contact.email) { showToast('No email address saved', 'error'); return; }
     window.location.href = `mailto:${contact.email}?subject=${encodeURIComponent('FarCare Check-In')}&body=${encodeURIComponent(msg)}`;
   }
   Storage.addHistory({ contactId, contactName:contact.name, message:msg, method:contact.preferredMethod });
