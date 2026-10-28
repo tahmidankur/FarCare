@@ -167,7 +167,7 @@
 <!-- =====================================================
      ONBOARDING SHEET
      ===================================================== -->
-<div id="onboarding-overlay" class="sheet-overlay" style="display:flex; opacity:1;" aria-modal="true">
+<div id="onboarding-overlay" class="sheet-overlay" style="display:none" role="dialog" aria-modal="true" aria-label="Welcome to FarCare">
   <div class="sheet">
     <div class="sheet-handle"></div>
 
@@ -186,11 +186,11 @@
         <p class="sheet-sub" style="margin-top:6px">Stay connected with the people who love you, no matter the distance.</p>
       </div>
       <div class="form-group">
-        <label class="form-label">Your first name</label>
+        <label class="form-label" for="ob-name">Your first name</label>
         <input class="form-input" id="ob-name" type="text" placeholder="e.g. Ankur" autocomplete="given-name">
       </div>
       <div class="form-group">
-        <label class="form-label">Your timezone</label>
+        <label class="form-label" for="ob-mytz">Your timezone</label>
         <div id="ob-mytz-wrap"></div>
       </div>
       <button class="btn btn-primary btn-full mt-12" onclick="obNext(0)">Continue →</button>
@@ -201,34 +201,34 @@
       <h2>Add Your First Contact</h2>
       <p class="sheet-sub">Who do you want to check in with most?</p>
       <div class="form-group">
-        <label class="form-label">Their name</label>
+        <label class="form-label" for="ob-cname">Their name</label>
         <input class="form-input" id="ob-cname" type="text" placeholder="e.g. Ammu" autocomplete="name">
       </div>
       <div class="form-group">
-        <label class="form-label">Relationship</label>
+        <label class="form-label" for="ob-crel">Relationship</label>
         <input class="form-input" id="ob-crel" type="text" placeholder="e.g. Mom, Dad, Sister…">
       </div>
       <div class="form-group">
-        <label class="form-label">Their timezone</label>
+        <label class="form-label" for="ob-famtz">Their timezone</label>
         <div id="ob-famtz-wrap"></div>
       </div>
       <div class="form-group">
-        <label class="form-label">How would you like to reach them?</label>
-        <div class="method-selector" id="ob-method">
-          <button class="method-btn active" data-method="whatsapp" onclick="selectMethod(this)">
+        <div class="form-label" id="ob-method-label">How would you like to reach them?</div>
+        <div class="method-selector" id="ob-method" role="group" aria-labelledby="ob-method-label">
+          <button class="method-btn active" data-method="whatsapp" aria-pressed="true" onclick="selectMethod(this)">
             <span class="mb-ico">💬</span>WhatsApp
           </button>
-          <button class="method-btn" data-method="email" onclick="selectMethod(this)">
+          <button class="method-btn" data-method="email" aria-pressed="false" onclick="selectMethod(this)">
             <span class="mb-ico">✉️</span>Email
           </button>
         </div>
       </div>
       <div class="form-group" id="ob-phone-group">
-        <label class="form-label">Their WhatsApp number</label>
+        <label class="form-label" for="ob-phone">Their WhatsApp number</label>
         <input class="form-input" id="ob-phone" type="tel" placeholder="+880 1XXX XXXXXX">
       </div>
       <div class="form-group" id="ob-email-group" style="display:none">
-        <label class="form-label">Their email address</label>
+        <label class="form-label" for="ob-email">Their email address</label>
         <input class="form-input" id="ob-email" type="email" placeholder="parent@email.com">
       </div>
       <div style="display:flex; gap:10px; margin-top:4px">
@@ -258,10 +258,10 @@
 <!-- =====================================================
      CHECK-IN SHEET
      ===================================================== -->
-<div id="checkin-overlay" class="sheet-overlay" style="display:none" aria-modal="true">
+<div id="checkin-overlay" class="sheet-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="ci-title">
   <div class="sheet">
     <div class="sheet-handle"></div>
-    <h2>Send a Check-In</h2>
+    <h2 id="ci-title">Send a Check-In</h2>
     <p class="sheet-sub">Review your message and send it now.</p>
 
     <!-- Contact info -->
@@ -274,7 +274,7 @@
     <div id="ci-tpl-chips" class="chips-scroll mb-16">
       <!-- template chips filled by JS -->
     </div>
-    <div class="msg-preview" id="ci-msg-preview" onclick="cycleTemplate()">
+    <div class="msg-preview" id="ci-msg-preview" role="button" tabindex="0" title="Tap to try the next message" onclick="cycleTemplate()">
       <!-- filled by JS -->
     </div>
 
@@ -294,10 +294,10 @@
 <!-- =====================================================
      TEMPLATE PICKER SHEET (from chip tap)
      ===================================================== -->
-<div id="tpl-sheet-overlay" class="sheet-overlay" style="display:none" aria-modal="true">
+<div id="tpl-sheet-overlay" class="sheet-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="tpl-title">
   <div class="sheet">
     <div class="sheet-handle"></div>
-    <h2>Choose a Message</h2>
+    <h2 id="tpl-title">Choose a Message</h2>
     <p class="sheet-sub">Tap a message to use it for your check-in.</p>
     <div id="tpl-sheet-list"></div>
     <button class="btn btn-soft btn-full mt-12" onclick="closeSheet('tpl-sheet-overlay')">Cancel</button>
@@ -314,6 +314,7 @@ let selectedTplText  = '';
 let selectedMethod   = '';
 let tzInterval       = null;
 let obMethodSelected = 'whatsapp';
+let obContact        = null;  // first contact, saved when onboarding finishes
 
 /* ---- Boot ---- */
 window.addEventListener('DOMContentLoaded', () => {
@@ -330,7 +331,6 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('ob-famtz-wrap').innerHTML = tzSelect('ob-famtz', user.familyTimezone);
     openSheet('onboarding-overlay');
   } else {
-    closeSheet('onboarding-overlay');
     renderDashboard();
   }
 });
@@ -345,7 +345,6 @@ function obNext(from) {
     const name = document.getElementById('ob-name').value.trim();
     if (!name) { showToast('Please enter your name ✏️', 'error'); return; }
     const myTz  = document.getElementById('ob-mytz').value;
-    const famTz = document.getElementById('ob-famtz') && document.getElementById('ob-famtz').value || 'Asia/Dhaka';
     Storage.setUser({ name, myTimezone: myTz });
     goObStep(1);
     return;
@@ -360,15 +359,14 @@ function obNext(from) {
     if (!cname) { showToast('Please enter a name ✏️', 'error'); return; }
     if (method === 'whatsapp' && !phone) { showToast('Please enter their number 📱', 'error'); return; }
     if (method === 'email'    && !email) { showToast('Please enter their email ✉️',  'error'); return; }
-    const contact = Storage.addContact({ name:cname, relationship:crel, timezone:famTz, preferredMethod:method, phone, email });
-    Storage.setUser({ familyTimezone: famTz });
+    obContact = { name:cname, relationship:crel, timezone:famTz, preferredMethod:method, phone, email };
     // populate summary
     document.getElementById('ob-summary').innerHTML = `
       <div style="display:flex;align-items:center;gap:12px">
         <div class="avatar avatar-md ${avatarColor(cname)}">${initials(cname)}</div>
         <div>
-          <div style="font-weight:800;font-size:15px">${cname}</div>
-          <div style="font-size:13px;color:var(--text-2);font-weight:600">${crel || 'Family'} · ${method === 'whatsapp' ? '💬 WhatsApp' : '✉️ Email'}</div>
+          <div style="font-weight:800;font-size:15px">${escapeHtml(cname)}</div>
+          <div style="font-size:13px;color:var(--text-2);font-weight:600">${escapeHtml(crel || 'Family')} · ${method === 'whatsapp' ? '💬 WhatsApp' : '✉️ Email'}</div>
         </div>
       </div>`;
     goObStep(2);
@@ -386,14 +384,22 @@ function goObStep(n) {
 }
 
 function selectMethod(btn) {
-  document.querySelectorAll('#ob-method .method-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('#ob-method .method-btn').forEach(b => {
+    b.classList.remove('active');
+    b.setAttribute('aria-pressed', 'false');
+  });
   btn.classList.add('active');
+  btn.setAttribute('aria-pressed', 'true');
   obMethodSelected = btn.dataset.method;
   document.getElementById('ob-phone-group').style.display = obMethodSelected === 'whatsapp' ? '' : 'none';
   document.getElementById('ob-email-group').style.display = obMethodSelected === 'email'    ? '' : 'none';
 }
 
 function finishOnboarding() {
+  if (obContact) {
+    Storage.addContact(obContact);
+    Storage.setUser({ familyTimezone: obContact.timezone });
+  }
   Storage.setOnboarded();
   closeSheet('onboarding-overlay');
   renderDashboard();
@@ -411,20 +417,22 @@ function renderDashboard() {
   // ---- Streak ----
   const streak = Storage.getStreak();
   const streakArea = document.getElementById('streak-area');
-  if (streak > 0) {
-    streakArea.innerHTML = `<div class="streak-pill">🔥 ${streak} day${streak!==1?'s':''}</div>`;
-  }
+  streakArea.innerHTML = streak > 0
+    ? `<div class="streak-pill">🔥 ${streak} day${streak!==1?'s':''}</div>`
+    : '';
 
   // ---- Missed banner ----
   const days = Storage.getDaysSinceLast();
   const banner = document.getElementById('missed-banner');
+  banner.style.display = 'none';
   if (days !== null && days >= 1) {
     banner.style.display = 'flex';
-    document.getElementById('missed-title').textContent = days === 1 ? 'Haven\'t checked in today' : `${days} days since last check-in`;
+    document.getElementById('missed-title').textContent = days === 1 ? 'You haven\'t checked in today' : `${days} days since your last check-in`;
     document.getElementById('missed-sub').textContent   = 'Your family will be glad to hear from you 💛';
   }
 
   // ---- Default active contact ----
+  if (!contacts.some(c => c.id === activeContactId)) activeContactId = null;
   if (contacts.length > 0 && !activeContactId) {
     activeContactId = contacts[0].id;
   }
@@ -455,38 +463,43 @@ function renderDashboard() {
       <div class="lci-row">
         <div class="avatar avatar-md ${avatarColor(last.contactName)}">${initials(last.contactName)}</div>
         <div class="lci-info">
-          <div class="lci-name">${last.contactName}</div>
-          <div class="lci-msg">${last.message}</div>
+          <div class="lci-name">${escapeHtml(last.contactName)}</div>
+          <div class="lci-msg">${escapeHtml(last.message)}</div>
         </div>
         <div class="lci-time">${timeAgo(last.timestamp)}</div>
       </div>`;
   }
 
-  // ---- Clocks ----
-  startClocks(user.myTimezone || 'America/Toronto', user.familyTimezone || 'Asia/Dhaka');
+  // ---- Clocks (show the selected contact's time) ----
+  updateFamilyClock();
+}
 
-  // ---- Family label ----
-  const famContact = contacts.find(c => c.id === activeContactId);
-  if (famContact) {
-    document.getElementById('family-tz-label').textContent = famContact.name;
-  }
+function updateFamilyClock() {
+  const user    = Storage.getUser();
+  const contact = Storage.getContact(activeContactId);
+  document.getElementById('family-tz-label').textContent = contact ? contact.name : 'Family';
+  const famTz = (contact && contact.timezone) || user.familyTimezone || 'Asia/Dhaka';
+  startClocks(user.myTimezone || 'America/Toronto', famTz);
 }
 
 function renderContactTabs(contacts) {
   const tabs = document.getElementById('contact-tabs');
   tabs.innerHTML = contacts.map(c => `
     <button class="contact-tab ${c.id === activeContactId ? 'active' : ''}"
-            onclick="setActiveContact('${c.id}')">
-      <span class="ct-dot"></span>${c.name}
+            data-id="${escapeHtml(c.id)}" aria-pressed="${c.id === activeContactId}"
+            onclick="setActiveContact(this.dataset.id)">
+      <span class="ct-dot"></span>${escapeHtml(c.name)}
     </button>`).join('');
 }
 
 function setActiveContact(id) {
   activeContactId = id;
-  document.querySelectorAll('.contact-tab').forEach(t => t.classList.remove('active'));
-  document.querySelector(`.contact-tab[onclick*="${id}"]`).classList.add('active');
-  const c = Storage.getContact(id);
-  if (c) document.getElementById('family-tz-label').textContent = c.name;
+  document.querySelectorAll('.contact-tab').forEach(t => {
+    const isActive = t.dataset.id === id;
+    t.classList.toggle('active', isActive);
+    t.setAttribute('aria-pressed', isActive);
+  });
+  updateFamilyClock();
 }
 
 function renderTplChips(templates) {
@@ -494,7 +507,7 @@ function renderTplChips(templates) {
   // show first 4 templates as chips, plus a "more" chip
   const shown = templates.slice(0, 4);
   wrap.innerHTML = shown.map(t => `
-    <button class="chip" onclick="openTplCheckin('${t.id}')">${t.text.slice(0,28)}…</button>
+    <button class="chip" data-id="${escapeHtml(t.id)}" onclick="openTplCheckin(this.dataset.id)">${escapeHtml(shortText(t.text, 28))}</button>
   `).join('') + `<button class="chip" onclick="openAllTpls()">More&nbsp;↓</button>`;
 }
 
@@ -506,7 +519,7 @@ function startClocks(myTz, famTz) {
   function tick() {
     const now = new Date();
     const fmt = (tz) => ({
-      time: now.toLocaleTimeString('en-CA', { timeZone:tz, hour:'2-digit', minute:'2-digit' }),
+      time: now.toLocaleTimeString('en-US', { timeZone:tz, hour:'numeric', minute:'2-digit' }),
       date: now.toLocaleDateString('en-CA', { timeZone:tz, weekday:'short', month:'short', day:'numeric' }),
     });
     const my  = fmt(myTz);
@@ -525,7 +538,7 @@ function startClocks(myTz, famTz) {
    ===================================================== */
 let ciTplIndex = 0;
 
-function openCheckinSheet() {
+function openCheckinSheet(tplIndex = 0) {
   const contacts = Storage.getContacts();
   if (!contacts.length) {
     showToast('Add a contact first 👆', 'default');
@@ -534,26 +547,26 @@ function openCheckinSheet() {
   }
   const templates = Storage.getTemplates();
   const contact   = Storage.getContact(activeContactId) || contacts[0];
-  ciTplIndex      = 0;
-  selectedTplText = templates[0].text;
+  ciTplIndex      = templates[tplIndex] ? tplIndex : 0;
+  selectedTplText = templates[ciTplIndex].text;
   selectedMethod  = contact.preferredMethod || 'whatsapp';
 
   // Contact row
   document.getElementById('ci-contact').innerHTML = `
     <div class="avatar avatar-md ${avatarColor(contact.name)}">${initials(contact.name)}</div>
     <div class="cc-info">
-      <h3>${contact.name}</h3>
-      <p>${contact.relationship || 'Family'} · ${contact.timezone || ''}</p>
+      <h3>${escapeHtml(contact.name)}</h3>
+      <p>${escapeHtml(contact.relationship || 'Family')} · ${escapeHtml(contact.timezone || '')}</p>
     </div>`;
 
   // Template chips
   const tplChips = document.getElementById('ci-tpl-chips');
   tplChips.innerHTML = templates.map((t,i) => `
-    <button class="chip ${i===0?'selected':''}" onclick="selectCiTpl(${i}, this)">${t.text.slice(0,22)}…</button>
+    <button class="chip ${i===ciTplIndex?'selected':''}" onclick="selectCiTpl(${i}, this)">${escapeHtml(shortText(t.text, 22))}</button>
   `).join('');
 
   // Message preview
-  document.getElementById('ci-msg-preview').textContent = templates[0].text;
+  document.getElementById('ci-msg-preview').textContent = selectedTplText;
 
   // Method buttons
   buildMethodBtns(contact);
@@ -564,17 +577,8 @@ function openCheckinSheet() {
 function openTplCheckin(tplId) {
   const contacts  = Storage.getContacts();
   if (!contacts.length) { showToast('Add a contact first 👆'); return; }
-  const templates = Storage.getTemplates();
-  const idx       = templates.findIndex(t => t.id === tplId);
-  ciTplIndex      = idx >= 0 ? idx : 0;
-  openCheckinSheet();
-  // override chip selection
-  setTimeout(() => {
-    selectedTplText = templates[ciTplIndex].text;
-    document.getElementById('ci-msg-preview').textContent = selectedTplText;
-    document.querySelectorAll('#ci-tpl-chips .chip').forEach((c,i) =>
-      c.classList.toggle('selected', i === ciTplIndex));
-  }, 50);
+  const idx = Storage.getTemplates().findIndex(t => t.id === tplId);
+  openCheckinSheet(idx >= 0 ? idx : 0);
 }
 
 function selectCiTpl(idx, btn) {
@@ -601,15 +605,19 @@ function buildMethodBtns(contact) {
   selectedMethod = contact.preferredMethod || 'whatsapp';
   wrap.innerHTML = methods.map(m => `
     <button class="meth-btn ${m.id === selectedMethod ? 'active' : ''}"
-            onclick="setMethod('${m.id}', this)">
+            aria-pressed="${m.id === selectedMethod}" onclick="setMethod('${m.id}', this)">
       <span class="mi">${m.icon}</span>${m.label}
     </button>`).join('');
 }
 
 function setMethod(method, btn) {
   selectedMethod = method;
-  document.querySelectorAll('#ci-methods .meth-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('#ci-methods .meth-btn').forEach(b => {
+    b.classList.remove('active');
+    b.setAttribute('aria-pressed', 'false');
+  });
   btn.classList.add('active');
+  btn.setAttribute('aria-pressed', 'true');
 }
 
 function confirmCheckin() {
@@ -618,20 +626,20 @@ function confirmCheckin() {
   const msg = selectedTplText || Storage.getTemplates()[0].text;
 
   if (selectedMethod === 'whatsapp') {
-    const phone = contact.phone.replace(/\D/g,'');
+    const phone = (contact.phone || '').replace(/\D/g,'');
     if (!phone) { showToast('No WhatsApp number saved 😕', 'error'); return; }
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
   } else {
     const email = contact.email;
     if (!email) { showToast('No email address saved 😕', 'error'); return; }
-    window.open(`mailto:${email}?subject=${encodeURIComponent('FarCare Check-In')}&body=${encodeURIComponent(msg)}`, '_blank');
+    window.location.href = `mailto:${email}?subject=${encodeURIComponent('FarCare Check-In')}&body=${encodeURIComponent(msg)}`;
   }
 
   // Save to history
   Storage.addHistory({ contactId: contact.id, contactName: contact.name, message: msg, method: selectedMethod });
 
   closeSheet('checkin-overlay');
-  showToast('Check-in logged! 💙', 'success');
+  showToast(selectedMethod === 'whatsapp' ? 'WhatsApp opened, tap Send there' : 'Email opened, tap Send there', 'success');
 
   // Refresh dashboard
   setTimeout(renderDashboard, 400);
@@ -643,8 +651,9 @@ function openAllTpls() {
   const contacts  = Storage.getContacts();
   if (!contacts.length) { showToast('Add a contact first 👆'); return; }
   document.getElementById('tpl-sheet-list').innerHTML = templates.map(t => `
-    <div class="list-item" style="cursor:pointer" onclick="pickTplAndSend('${t.id}')">
-      <div style="flex:1; font-size:14px; font-weight:600; color:var(--text-2)">${t.text}</div>
+    <div class="list-item" style="cursor:pointer" role="button" tabindex="0"
+         data-id="${escapeHtml(t.id)}" onclick="pickTplAndSend(this.dataset.id)">
+      <div style="flex:1; font-size:14px; font-weight:600; color:var(--text-2)">${escapeHtml(t.text)}</div>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
     </div>`).join('');
   openSheet('tpl-sheet-overlay');

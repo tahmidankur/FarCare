@@ -100,10 +100,13 @@ const Storage = {
     return streak;
   },
 
+  // Counts calendar days, so 1 means the last check-in was yesterday
   getDaysSinceLast() {
     const h = this.getHistory();
     if (!h.length) return null;
-    return Math.floor((Date.now() - h[0].timestamp) / 86400000);
+    const last  = new Date(h[0].timestamp); last.setHours(0, 0, 0, 0);
+    const today = new Date();               today.setHours(0, 0, 0, 0);
+    return Math.round((today - last) / 86400000);
   },
 
   /* ---- Backup ---- */
@@ -120,6 +123,11 @@ const Storage = {
   },
   importData(jsonStr) {
     const d = JSON.parse(jsonStr);
+    // Make sure this really is a FarCare backup before overwriting anything
+    if (!d || !d.farcare_version) throw new Error('Not a FarCare backup');
+    for (const key of ['contacts', 'history', 'templates']) {
+      if (d[key] && !Array.isArray(d[key])) throw new Error('Bad ' + key);
+    }
     if (d.user)      this._set(this.KEYS.USER,      d.user);
     if (d.contacts)  this._set(this.KEYS.CONTACTS,  d.contacts);
     if (d.history)   this._set(this.KEYS.HISTORY,   d.history);
@@ -139,12 +147,29 @@ function showToast(msg, type = 'default') {
     el = document.createElement('div');
     el.id = 'fc-toast';
     el.className = 'fc-toast';
+    el.setAttribute('role', 'status');
+    el.setAttribute('aria-live', 'polite');
     document.body.appendChild(el);
   }
   el.textContent = msg;
   el.className   = 'fc-toast fc-toast--' + type + ' show';
   clearTimeout(el._t);
   el._t = setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+/** Make text safe to put inside innerHTML (stops names like "<b>" turning into HTML) */
+function escapeHtml(text = '') {
+  return String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/** Shorten long text and add "…" only when something was cut */
+function shortText(text = '', max = 28) {
+  return text.length > max ? text.slice(0, max).trim() + '…' : text;
 }
 
 /** Get initials from a name */
@@ -180,19 +205,61 @@ function fmtTime(ts) {
   return new Date(ts).toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit' });
 }
 
-/** Open a bottom-sheet overlay */
+/** Open a bottom-sheet overlay and move keyboard focus into it */
+let lastFocused = null;
 function openSheet(id) {
   const el = document.getElementById(id);
-  if (el) { el.style.display = 'flex'; requestAnimationFrame(() => el.classList.add('open')); }
+  if (!el) return;
+  lastFocused = document.activeElement;
+  el.style.display = 'flex';
+  requestAnimationFrame(() => {
+    el.classList.add('open');
+    const first = focusableIn(el)[0];
+    if (first) first.focus();
+  });
 }
 
-/** Close a bottom-sheet overlay */
+/** Close a bottom-sheet overlay and put focus back where it was */
 function closeSheet(id) {
   const el = document.getElementById(id);
   if (!el) return;
   el.classList.remove('open');
   setTimeout(() => { el.style.display = 'none'; }, 300);
+  if (lastFocused && document.contains(lastFocused)) lastFocused.focus();
 }
+
+function focusableIn(el) {
+  return [...el.querySelectorAll('button, input, select, textarea, a[href], [tabindex="0"]')]
+    .filter(f => f.offsetParent !== null);
+}
+
+/* Keyboard support shared by every page */
+document.addEventListener('keydown', e => {
+  // The open sheet on top is the last visible one in the page
+  const openSheets = [...document.querySelectorAll('.sheet-overlay.open')]
+    .filter(el => el.style.display !== 'none');
+  const sheet = openSheets[openSheets.length - 1];
+
+  // Escape closes the open sheet (onboarding has to be finished, so it stays)
+  if (e.key === 'Escape' && sheet && sheet.id !== 'onboarding-overlay') {
+    closeSheet(sheet.id);
+  }
+
+  // Keep Tab inside the open sheet
+  if (e.key === 'Tab' && sheet) {
+    const items = focusableIn(sheet);
+    if (!items.length) return;
+    const first = items[0], last = items[items.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  }
+
+  // Let Enter and Space press things marked role="button"
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[role="button"]')) {
+    e.preventDefault();
+    e.target.click();
+  }
+});
 
 /** Set the active nav item based on current page filename */
 function initNav() {
@@ -236,3 +303,46 @@ function tzSelect(id, selectedValue, cls = '') {
   ).join('');
   return `<select id="${id}" class="form-input form-select ${cls}">${opts}</select>`;
 }
+
+/* =========================================================
+   Daily reminder
+   Browsers can only run this timer while FarCare is open,
+   so every page starts it when it loads.
+   ========================================================= */
+let reminderTimer = null;
+
+function scheduleReminder() {
+  clearTimeout(reminderTimer);
+  const settings = Storage.getSettings();
+  if (!settings.notificationsEnabled || !('Notification' in window)) return;
+  if (Notification.permission !== 'granted') return;
+
+  const [h, m] = (settings.reminderTime || '09:00').split(':').map(Number);
+  const now  = new Date();
+  const next = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0);
+  if (next <= now) next.setDate(next.getDate() + 1);
+
+  reminderTimer = setTimeout(() => {
+    // No reminder needed if you already checked in today
+    if (Storage.getDaysSinceLast() !== 0) showReminder();
+    scheduleReminder(); // set up tomorrow's reminder
+  }, next - now);
+}
+
+function showReminder() {
+  const user  = Storage.getUser();
+  const title = 'FarCare';
+  const options = {
+    body: `Hey ${user.name || 'there'}! Time to check in with your family.`,
+    icon: 'icons/icon-192.png',
+    tag:  'farcare-reminder',
+  };
+  // Android only shows notifications through the service worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.ready.then(reg => reg.showNotification(title, options));
+  } else {
+    new Notification(title, options);
+  }
+}
+
+window.addEventListener('DOMContentLoaded', scheduleReminder);

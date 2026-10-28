@@ -2,7 +2,7 @@
    FarCare Service Worker — Offline-first PWA
    ========================================================= */
 
-const CACHE_NAME = 'farcare-v1';
+const CACHE_NAME = 'farcare-v2';
 
 const CORE_ASSETS = [
   './',
@@ -68,19 +68,20 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // Same-origin assets — cache-first, update in background
+  // Same-origin files: try the network first so updates show up right away,
+  // and fall back to the cached copy when offline
   if (url.origin === self.location.origin) {
     e.respondWith(
-      caches.match(e.request).then((cached) => {
-        const networkFetch = fetch(e.request).then((r) => {
+      fetch(e.request)
+        .then((r) => {
           if (r.ok) {
-            caches.open(CACHE_NAME).then((cache) => cache.put(e.request, r.clone()));
+            const copy = r.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(e.request, copy));
           }
           return r;
-        }).catch(() => cached || new Response('Offline', { status: 503 }));
-
-        return cached || networkFetch;
-      })
+        })
+        .catch(() => caches.match(e.request)
+          .then((cached) => cached || new Response('Offline', { status: 503 })))
     );
   }
 });

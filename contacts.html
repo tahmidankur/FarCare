@@ -75,7 +75,7 @@
 <!-- =====================================================
      ADD / EDIT CONTACT SHEET
      ===================================================== -->
-<div id="contact-sheet-overlay" class="sheet-overlay" style="display:none">
+<div id="contact-sheet-overlay" class="sheet-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="cs-title">
   <div class="sheet">
     <div class="sheet-handle"></div>
     <h2 id="cs-title">Add Contact</h2>
@@ -84,34 +84,34 @@
     <input type="hidden" id="cs-id">
 
     <div class="form-group">
-      <label class="form-label">Their name</label>
+      <label class="form-label" for="cs-name">Their name</label>
       <input class="form-input" id="cs-name" type="text" placeholder="e.g. Ammu">
     </div>
     <div class="form-group">
-      <label class="form-label">Relationship</label>
+      <label class="form-label" for="cs-rel">Relationship</label>
       <input class="form-input" id="cs-rel" type="text" placeholder="Mom, Dad, Sister, Friend…">
     </div>
     <div class="form-group">
-      <label class="form-label">Their timezone</label>
+      <label class="form-label" for="cs-tz">Their timezone</label>
       <div id="cs-tz-wrap"></div>
     </div>
     <div class="form-group">
-      <label class="form-label">Preferred messaging method</label>
-      <div class="method-selector" id="cs-method">
-        <button class="method-btn active" data-method="whatsapp" onclick="csSelectMethod(this)">
+      <div class="form-label" id="cs-method-label">Preferred messaging method</div>
+      <div class="method-selector" id="cs-method" role="group" aria-labelledby="cs-method-label">
+        <button class="method-btn active" data-method="whatsapp" aria-pressed="true" onclick="csSelectMethod(this)">
           <span class="mb-ico">💬</span>WhatsApp
         </button>
-        <button class="method-btn" data-method="email" onclick="csSelectMethod(this)">
+        <button class="method-btn" data-method="email" aria-pressed="false" onclick="csSelectMethod(this)">
           <span class="mb-ico">✉️</span>Email
         </button>
       </div>
     </div>
     <div class="form-group" id="cs-phone-group">
-      <label class="form-label">WhatsApp number (with country code)</label>
+      <label class="form-label" for="cs-phone">WhatsApp number (with country code)</label>
       <input class="form-input" id="cs-phone" type="tel" placeholder="+880 1XXX XXXXXX">
     </div>
     <div class="form-group" id="cs-email-group" style="display:none">
-      <label class="form-label">Email address</label>
+      <label class="form-label" for="cs-email">Email address</label>
       <input class="form-input" id="cs-email" type="email" placeholder="parent@email.com">
     </div>
 
@@ -125,7 +125,7 @@
 <!-- =====================================================
      DELETE CONFIRM SHEET
      ===================================================== -->
-<div id="delete-sheet-overlay" class="sheet-overlay" style="display:none">
+<div id="delete-sheet-overlay" class="sheet-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="del-title">
   <div class="sheet">
     <div class="sheet-handle"></div>
     <div style="text-align:center; padding:8px 0 20px">
@@ -143,10 +143,10 @@
 </div>
 
 <!-- Quick check-in sheet (simplified) -->
-<div id="quick-ci-overlay" class="sheet-overlay" style="display:none">
+<div id="quick-ci-overlay" class="sheet-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="qci-title">
   <div class="sheet">
     <div class="sheet-handle"></div>
-    <h2>Quick Check-In</h2>
+    <h2 id="qci-title">Quick Check-In</h2>
     <p class="sheet-sub" id="qci-sub">Send a message to this contact.</p>
     <div id="qci-contact-row" style="margin-bottom:16px"></div>
     <div class="msg-preview-label" style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--text-3);margin-bottom:8px">Message</div>
@@ -187,24 +187,25 @@ function renderContacts() {
     const methodLabel = c.preferredMethod === 'whatsapp' ? '💬 WhatsApp' : '✉️ Email';
     const detail = c.preferredMethod === 'whatsapp' ? (c.phone || 'No number') : (c.email || 'No email');
     return `
-    <div class="contact-card" id="card-${c.id}">
+    <div class="contact-card" data-id="${escapeHtml(c.id)}">
       <div class="contact-main">
         <div class="avatar avatar-lg ${avatarColor(c.name)}">${initials(c.name)}</div>
         <div class="contact-info">
-          <div class="cn">${c.name}</div>
-          <div class="cr">${c.relationship || 'Contact'}</div>
-          <div class="cc">${methodLabel} · ${detail}</div>
+          <div class="cn">${escapeHtml(c.name)}</div>
+          <div class="cr">${escapeHtml(c.relationship || 'Contact')}</div>
+          <div class="cc">${methodLabel} · ${escapeHtml(detail)}</div>
         </div>
       </div>
       <div class="contact-actions">
         <div class="contact-actions-row">
-          <button class="btn btn-safe btn-sm" style="flex:1" onclick="quickCheckin('${c.id}')">
+          <button class="btn btn-safe btn-sm" style="flex:1" onclick="quickCheckin(this.closest('.contact-card').dataset.id)">
             💙 Check In
           </button>
-          <button class="btn btn-ghost btn-sm" onclick="openEditSheet('${c.id}')">
+          <button class="btn btn-ghost btn-sm" onclick="openEditSheet(this.closest('.contact-card').dataset.id)">
             ✏️ Edit
           </button>
-          <button class="btn btn-soft btn-sm btn-icon" onclick="openDeleteSheet('${c.id}', '${c.name}')">
+          <button class="btn btn-soft btn-sm btn-icon" aria-label="Delete ${escapeHtml(c.name)}"
+                  onclick="openDeleteSheet(this.closest('.contact-card').dataset.id)">
             🗑️
           </button>
         </div>
@@ -223,8 +224,10 @@ function openAddSheet() {
   document.getElementById('cs-email').value = '';
   document.getElementById('cs-tz-wrap').innerHTML = tzSelect('cs-tz', 'Asia/Dhaka');
   csMethodSelected = 'whatsapp';
-  document.querySelectorAll('#cs-method .method-btn').forEach(b =>
-    b.classList.toggle('active', b.dataset.method === 'whatsapp'));
+  document.querySelectorAll('#cs-method .method-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.method === 'whatsapp');
+    b.setAttribute('aria-pressed', b.dataset.method === 'whatsapp');
+  });
   document.getElementById('cs-phone-group').style.display = '';
   document.getElementById('cs-email-group').style.display = 'none';
   openSheet('contact-sheet-overlay');
@@ -243,8 +246,10 @@ function openEditSheet(id) {
   document.getElementById('cs-email').value = c.email || '';
   document.getElementById('cs-tz-wrap').innerHTML = tzSelect('cs-tz', c.timezone || 'Asia/Dhaka');
   csMethodSelected = c.preferredMethod || 'whatsapp';
-  document.querySelectorAll('#cs-method .method-btn').forEach(b =>
-    b.classList.toggle('active', b.dataset.method === csMethodSelected));
+  document.querySelectorAll('#cs-method .method-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.method === csMethodSelected);
+    b.setAttribute('aria-pressed', b.dataset.method === csMethodSelected);
+  });
   document.getElementById('cs-phone-group').style.display = csMethodSelected === 'whatsapp' ? '' : 'none';
   document.getElementById('cs-email-group').style.display = csMethodSelected === 'email'    ? '' : 'none';
   openSheet('contact-sheet-overlay');
@@ -252,8 +257,12 @@ function openEditSheet(id) {
 
 function csSelectMethod(btn) {
   csMethodSelected = btn.dataset.method;
-  document.querySelectorAll('#cs-method .method-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('#cs-method .method-btn').forEach(b => {
+    b.classList.remove('active');
+    b.setAttribute('aria-pressed', 'false');
+  });
   btn.classList.add('active');
+  btn.setAttribute('aria-pressed', 'true');
   document.getElementById('cs-phone-group').style.display = csMethodSelected === 'whatsapp' ? '' : 'none';
   document.getElementById('cs-email-group').style.display = csMethodSelected === 'email'    ? '' : 'none';
 }
@@ -283,9 +292,11 @@ function saveContact() {
 }
 
 /* ---- Delete ---- */
-function openDeleteSheet(id, name) {
+function openDeleteSheet(id) {
+  const c = Storage.getContact(id);
+  if (!c) return;
   document.getElementById('del-id').value    = id;
-  document.getElementById('del-title').textContent = 'Delete ' + name + '?';
+  document.getElementById('del-title').textContent = 'Delete ' + c.name + '?';
   openSheet('delete-sheet-overlay');
 }
 
@@ -298,7 +309,10 @@ function confirmDelete() {
 }
 
 /* ---- Quick check-in ---- */
+let quickContactId = null;
+
 function quickCheckin(id) {
+  quickContactId  = id;
   const contact   = Storage.getContact(id);
   const templates = Storage.getTemplates();
   if (!contact) return;
@@ -308,14 +322,15 @@ function quickCheckin(id) {
     <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--surface-2);border-radius:12px">
       <div class="avatar avatar-md ${avatarColor(contact.name)}">${initials(contact.name)}</div>
       <div>
-        <div style="font-weight:800">${contact.name}</div>
-        <div style="font-size:12px;color:var(--text-3);font-weight:600">${contact.preferredMethod === 'whatsapp' ? '💬' : '✉️'} ${contact.preferredMethod}</div>
+        <div style="font-weight:800">${escapeHtml(contact.name)}</div>
+        <div style="font-size:12px;color:var(--text-3);font-weight:600">${contact.preferredMethod === 'whatsapp' ? '💬 WhatsApp' : '✉️ Email'}</div>
       </div>
     </div>`;
 
   document.getElementById('qci-tpl-list').innerHTML = templates.map(t => `
-    <div class="list-item" style="cursor:pointer" onclick="sendQuickCheckin('${id}','${t.id}')">
-      <div style="flex:1;font-size:14px;font-weight:600;color:var(--text-2);line-height:1.45">${t.text}</div>
+    <div class="list-item" style="cursor:pointer" role="button" tabindex="0"
+         data-id="${escapeHtml(t.id)}" onclick="sendQuickCheckin(quickContactId, this.dataset.id)">
+      <div style="flex:1;font-size:14px;font-weight:600;color:var(--text-2);line-height:1.45">${escapeHtml(t.text)}</div>
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
     </div>`).join('');
 
@@ -329,16 +344,18 @@ function sendQuickCheckin(contactId, tplId) {
   const msg = template.text;
 
   if (contact.preferredMethod === 'whatsapp') {
-    const phone = contact.phone.replace(/\D/g,'');
+    const phone = (contact.phone || '').replace(/\D/g,'');
+    if (!phone) { showToast('No WhatsApp number saved 😕', 'error'); return; }
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
   } else {
+    if (!contact.email) { showToast('No email address saved 😕', 'error'); return; }
     window.location.href = `mailto:${contact.email}?subject=${encodeURIComponent('FarCare Check-In')}&body=${encodeURIComponent(msg)}`;
   }
   Storage.addHistory({ contactId, contactName:contact.name, message:msg, method:contact.preferredMethod });
   closeSheet('quick-ci-overlay');
   const sentMsg = contact.preferredMethod === 'email'
-    ? 'Email app opened — just tap Send! 💙'
-    : 'Check-in sent to ' + contact.name + ' 💙';
+    ? 'Email opened, tap Send there'
+    : 'WhatsApp opened, tap Send there';
   showToast(sentMsg, 'success');
 }
 

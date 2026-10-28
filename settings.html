@@ -41,7 +41,7 @@
   <!-- ===== PROFILE ===== -->
   <div class="card settings-card">
     <div class="card-section-header">Profile</div>
-    <div class="setting-row" onclick="openProfileSheet()" style="cursor:pointer">
+    <div class="setting-row" role="button" tabindex="0" onclick="openProfileSheet()" style="cursor:pointer">
       <div class="setting-icon si-blue">👤</div>
       <div class="setting-info">
         <div class="s-label">Your Name</div>
@@ -49,7 +49,7 @@
       </div>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
     </div>
-    <div class="setting-row" onclick="openTimezoneSheet()" style="cursor:pointer">
+    <div class="setting-row" role="button" tabindex="0" onclick="openTimezoneSheet()" style="cursor:pointer">
       <div class="setting-icon si-blue">🌍</div>
       <div class="setting-info">
         <div class="s-label">Your Timezone</div>
@@ -57,7 +57,7 @@
       </div>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
     </div>
-    <div class="setting-row" onclick="openTimezoneSheet()" style="cursor:pointer">
+    <div class="setting-row" role="button" tabindex="0" onclick="openTimezoneSheet()" style="cursor:pointer">
       <div class="setting-icon si-green">🏠</div>
       <div class="setting-info">
         <div class="s-label">Family Timezone</div>
@@ -77,7 +77,7 @@
         <div class="s-sub" id="s-notif-val">—</div>
       </div>
       <label class="toggle">
-        <input type="checkbox" id="notif-toggle" onchange="toggleNotifications(this)">
+        <input type="checkbox" id="notif-toggle" aria-label="Daily reminder" onchange="toggleNotifications(this)">
         <div class="toggle-track"></div>
         <div class="toggle-thumb"></div>
       </label>
@@ -88,7 +88,7 @@
         <div class="s-label">Reminder Time</div>
         <div class="s-sub">When should we remind you?</div>
       </div>
-      <input type="time" id="reminder-time-input"
+      <input type="time" id="reminder-time-input" aria-label="Reminder time"
         style="border:2px solid var(--border);border-radius:8px;padding:6px 10px;font-family:var(--font);font-size:13px;font-weight:700;color:var(--text);background:var(--surface);outline:none;cursor:pointer"
         onchange="saveReminderTime(this.value)">
     </div>
@@ -113,7 +113,7 @@
   <!-- ===== DATA ===== -->
   <div class="card settings-card">
     <div class="card-section-header">Data &amp; Backup</div>
-    <div class="setting-row" onclick="exportData()" style="cursor:pointer">
+    <div class="setting-row" role="button" tabindex="0" onclick="exportData()" style="cursor:pointer">
       <div class="setting-icon si-purple">⬇️</div>
       <div class="setting-info">
         <div class="s-label">Export Data</div>
@@ -121,7 +121,7 @@
       </div>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
     </div>
-    <div class="setting-row" onclick="document.getElementById('import-file').click()" style="cursor:pointer">
+    <div class="setting-row" role="button" tabindex="0" onclick="document.getElementById('import-file').click()" style="cursor:pointer">
       <div class="setting-icon si-purple">⬆️</div>
       <div class="setting-info">
         <div class="s-label">Import Data</div>
@@ -130,7 +130,7 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
     </div>
     <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(this)">
-    <div class="setting-row" onclick="openResetSheet()" style="cursor:pointer">
+    <div class="setting-row" role="button" tabindex="0" onclick="openResetSheet()" style="cursor:pointer">
       <div class="setting-icon" style="background:#FEE2E2">🗑️</div>
       <div class="setting-info">
         <div class="s-label" style="color:#DC2626">Reset All Data</div>
@@ -155,7 +155,7 @@
       <span class="about-label">Data stored</span>
       <span class="about-value">On this device only</span>
     </div>
-    <div class="about-row" style="cursor:pointer" onclick="window.open('contacts.html')">
+    <div class="about-row">
       <span class="about-label">Contacts</span>
       <span class="about-value" id="about-contacts">0</span>
     </div>
@@ -175,13 +175,13 @@
 </div>
 
 <!-- Profile sheet -->
-<div id="profile-sheet-overlay" class="sheet-overlay" style="display:none">
+<div id="profile-sheet-overlay" class="sheet-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="p-title">
   <div class="sheet">
     <div class="sheet-handle"></div>
-    <h2>Your Profile</h2>
+    <h2 id="p-title">Your Profile</h2>
     <p class="sheet-sub">Update your name.</p>
     <div class="form-group">
-      <label class="form-label">Your name</label>
+      <label class="form-label" for="p-name">Your name</label>
       <input class="form-input" id="p-name" type="text" placeholder="Your first name">
     </div>
     <div style="display:flex;gap:10px;margin-top:4px">
@@ -192,17 +192,17 @@
 </div>
 
 <!-- Timezone sheet -->
-<div id="tz-sheet-overlay" class="sheet-overlay" style="display:none">
+<div id="tz-sheet-overlay" class="sheet-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="tz-title">
   <div class="sheet">
     <div class="sheet-handle"></div>
-    <h2>Timezones</h2>
+    <h2 id="tz-title">Timezones</h2>
     <p class="sheet-sub">Set where you are and where your family is.</p>
     <div class="form-group">
-      <label class="form-label">Your timezone</label>
+      <label class="form-label" for="tz-my">Your timezone</label>
       <div id="tz-my-wrap"></div>
     </div>
     <div class="form-group">
-      <label class="form-label">Family timezone (shown on dashboard)</label>
+      <label class="form-label" for="tz-fam">Family timezone (used when a contact has none)</label>
       <div id="tz-fam-wrap"></div>
     </div>
     <div style="display:flex;gap:10px;margin-top:4px">
@@ -213,12 +213,12 @@
 </div>
 
 <!-- Reset confirm sheet -->
-<div id="reset-sheet-overlay" class="sheet-overlay" style="display:none">
+<div id="reset-sheet-overlay" class="sheet-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="reset-title">
   <div class="sheet">
     <div class="sheet-handle"></div>
     <div style="text-align:center;padding:8px 0 22px">
       <div style="font-size:44px;margin-bottom:10px">⚠️</div>
-      <h2>Reset all data?</h2>
+      <h2 id="reset-title">Reset all data?</h2>
       <p style="font-size:14px;color:var(--text-2);margin-top:6px;line-height:1.5">
         This will permanently delete your contacts, history, and settings. This cannot be undone.
       </p>
@@ -230,8 +230,6 @@
 
 <script src="storage.js"></script>
 <script>
-let notifScheduled = null;
-
 window.addEventListener('DOMContentLoaded', () => {
   initNav();
   renderSettings();
@@ -268,9 +266,9 @@ function renderTemplates() {
   }
   card.innerHTML = templates.map((t, i) => `
     <div class="tpl-item">
-      <textarea class="tpl-edit-input" rows="2"
-        onblur="saveTemplateText(${i}, this.value)">${t.text}</textarea>
-      <button class="btn-icon danger" onclick="deleteTemplate(${i})" title="Delete">
+      <textarea class="tpl-edit-input" rows="2" aria-label="Message ${i + 1}"
+        onblur="saveTemplateText(${i}, this.value)">${escapeHtml(t.text)}</textarea>
+      <button class="btn-icon danger" onclick="deleteTemplate(${i})" title="Delete" aria-label="Delete message ${i + 1}">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
       </button>
     </div>`).join('');
@@ -336,9 +334,14 @@ function saveTimezones() {
 function toggleNotifications(cb) {
   if (!cb.checked) {
     Storage.setSettings({ notificationsEnabled: false });
-    clearScheduledReminder();
+    scheduleReminder(); // turns the timer off now that reminders are disabled
     document.getElementById('s-notif-val').textContent = 'Off';
     showToast('Reminders off', 'default');
+    return;
+  }
+  if (!('Notification' in window)) {
+    cb.checked = false;
+    showToast('This browser does not support reminders', 'error');
     return;
   }
   Notification.requestPermission().then(perm => {
@@ -360,27 +363,7 @@ function saveReminderTime(val) {
   showToast('Reminder time saved', 'success');
 }
 
-function scheduleReminder() {
-  clearScheduledReminder();
-  const settings = Storage.getSettings();
-  const [h, m]   = (settings.reminderTime || '09:00').split(':').map(Number);
-  const now  = new Date();
-  const next = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0);
-  if (next <= now) next.setDate(next.getDate() + 1);
-  const ms = next - now;
-  notifScheduled = setTimeout(() => {
-    const user = Storage.getUser();
-    new Notification('FarCare 💙', {
-      body: `Hey ${user.name || 'there'}! Time to check in with your family.`,
-      icon: 'assets/icon-192.png',
-    });
-    scheduleReminder(); // reschedule for next day
-  }, ms);
-}
-
-function clearScheduledReminder() {
-  if (notifScheduled) { clearTimeout(notifScheduled); notifScheduled = null; }
-}
+// scheduleReminder() lives in storage.js so every page can start it
 
 /* ---- Export / Import ---- */
 function exportData() {

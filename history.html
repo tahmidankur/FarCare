@@ -56,12 +56,12 @@
 </div>
 
 <!-- Clear confirm sheet -->
-<div id="clear-sheet-overlay" class="sheet-overlay" style="display:none">
+<div id="clear-sheet-overlay" class="sheet-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="clear-title">
   <div class="sheet">
     <div class="sheet-handle"></div>
     <div style="text-align:center; padding:8px 0 22px">
       <div style="font-size:44px; margin-bottom:10px">🗑️</div>
-      <h2>Clear all history?</h2>
+      <h2 id="clear-title">Clear all history?</h2>
       <p style="font-size:14px;color:var(--text-2);margin-top:6px;line-height:1.5">
         This removes all check-in records permanently.<br>Your contacts and templates are kept.
       </p>
@@ -124,11 +124,11 @@ function renderHistory() {
         <div class="avatar avatar-md ${avatarColor(h.contactName)}">${initials(h.contactName)}</div>
         <div class="hi-body">
           <div class="hi-meta">
-            <span class="hi-name">${h.contactName}</span>
-            <span class="hi-method">${h.method === 'whatsapp' ? '💬' : '✉️'} ${h.method}</span>
+            <span class="hi-name">${escapeHtml(h.contactName)}</span>
+            <span class="hi-method">${h.method === 'whatsapp' ? '💬 WhatsApp' : '✉️ Email'}</span>
             <span class="hi-time">${timeAgo(h.timestamp)}</span>
           </div>
-          <div class="hi-msg">${h.message}</div>
+          <div class="hi-msg">${escapeHtml(h.message)}</div>
         </div>
       </div>`).join('');
     return `<div class="history-date-group"><div class="history-date-label">${label}</div>${rows}</div>`;
