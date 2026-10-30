@@ -131,8 +131,6 @@ p  { line-height:1.55; }
   margin-bottom: 14px;
 }
 
-.section-gap { height:4px; }
-
 /* ====================================================
    BOTTOM NAVIGATION
    ==================================================== */
@@ -275,9 +273,6 @@ p  { line-height:1.55; }
   cursor:pointer;
 }
 
-.form-row { display:flex; gap:10px; }
-.form-row .form-group { flex:1; }
-
 /* ====================================================
    TEMPLATE CHIPS / SELECTORS
    ==================================================== */
@@ -316,7 +311,6 @@ p  { line-height:1.55; }
   border-radius:14px;
 }
 .avatar-md { width:44px; height:44px; font-size:16px; }
-.avatar-sm { width:34px; height:34px; font-size:13px; border-radius:10px; }
 .avatar-lg { width:56px; height:56px; font-size:20px; border-radius:18px; }
 
 .av-blue   { background:var(--primary-lt); color:var(--primary); }
@@ -335,10 +329,6 @@ p  { line-height:1.55; }
   border-radius:100px;
   font-size:12px; font-weight:700;
 }
-.badge-safe   { background:var(--safe-lt);  color:var(--safe);  }
-.badge-warn   { background:#FEF3C7;         color:#D97706;      }
-.badge-muted  { background:var(--surface-2);color:var(--text-3);}
-.badge-warm   { background:var(--warm-lt);  color:var(--warm);  }
 
 /* ====================================================
    LIST ITEMS
@@ -351,11 +341,6 @@ p  { line-height:1.55; }
 }
 .list-item:last-child  { border-bottom:none; padding-bottom:0; }
 .list-item:first-child { padding-top:0; }
-
-.list-item-info { flex:1; min-width:0; }
-.list-item-info .name  { font-size:15px; font-weight:700; }
-.list-item-info .sub   { font-size:12px; color:var(--text-3); font-weight:600; margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.list-item-actions { display:flex; gap:5px; flex-shrink:0; }
 
 /* ====================================================
    BOTTOM SHEET MODALS
@@ -560,7 +545,6 @@ p  { line-height:1.55; }
 .si-blue   { background:var(--primary-lt); color:var(--primary); }
 .si-green  { background:var(--safe-lt);    color:var(--safe-dk); }
 .si-warm   { background:var(--warm-lt);    color:var(--warm); }
-.si-purple { background:var(--purple-lt);  }
 
 .setting-info { flex:1; min-width:0; }
 .setting-info .s-label { font-size:14px; font-weight:700; }
@@ -602,11 +586,6 @@ p  { line-height:1.55; }
 }
 .tpl-item:last-child  { border-bottom:none; }
 .tpl-item:first-child { padding-top:0; }
-
-.tpl-text {
-  flex:1; font-size:13px; color:var(--text-2);
-  font-weight:600; line-height:1.5; padding-top:2px;
-}
 
 /* ====================================================
    CONTACT FORM SHEET SEGMENTS
@@ -666,14 +645,10 @@ p  { line-height:1.55; }
    MISC UTILITIES
    ==================================================== */
 
-.divider { height:1.5px; background:var(--border); margin:4px 0; }
 .mt-8  { margin-top:8px;  }
 .mt-12 { margin-top:12px; }
-.mt-16 { margin-top:16px; }
 .mb-16 { margin-bottom:16px; }
-.flex-center { display:flex; align-items:center; justify-content:center; }
 .flex-between{ display:flex; align-items:center; justify-content:space-between; }
-.gap-8  { gap:8px;  }
 .gap-12 { gap:12px; }
 .text-muted { color:var(--text-3); font-size:13px; font-weight:600; }
 
