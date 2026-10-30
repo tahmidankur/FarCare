@@ -162,14 +162,12 @@ const ICONS = {
   info:     '<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>',
 };
 
-/** Build an <svg> icon by name */
 function icon(name, size = 18) {
   return `<svg class="icon" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"
     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
     aria-hidden="true">${ICONS[name] || ''}</svg>`;
 }
 
-/** Icon and label for a send method */
 function methodLabel(method) {
   return method === 'whatsapp' ? icon('message', 13) + ' WhatsApp' : icon('mail', 13) + ' Email';
 }
@@ -185,7 +183,6 @@ window.addEventListener('DOMContentLoaded', () => {
    Shared UI Utilities
    ========================================================= */
 
-/** Flash a toast message */
 function showToast(msg, type = 'default') {
   let el = document.getElementById('fc-toast');
   if (!el) {
@@ -202,7 +199,7 @@ function showToast(msg, type = 'default') {
   el._t = setTimeout(() => el.classList.remove('show'), 2800);
 }
 
-/** Make text safe to put inside innerHTML (stops names like "<b>" turning into HTML) */
+// Make text safe to put inside innerHTML (stops names like "<b>" turning into HTML)
 function escapeHtml(text = '') {
   return String(text)
     .replace(/&/g, '&amp;')
@@ -212,17 +209,16 @@ function escapeHtml(text = '') {
     .replace(/'/g, '&#39;');
 }
 
-/** Shorten long text and add "…" only when something was cut */
+// Shorten long text and add "…" only when something was cut
 function shortText(text = '', max = 28) {
   return text.length > max ? text.slice(0, max).trim() + '…' : text;
 }
 
-/** Get initials from a name */
 function initials(name = '') {
   return (name.trim().split(/\s+/).map(w => w[0] || '').join('').toUpperCase() || '?').slice(0, 2);
 }
 
-/** Deterministic avatar colour class */
+// Deterministic avatar colour class
 function avatarColor(name = '') {
   const colours = ['av-blue', 'av-green', 'av-warm', 'av-purple', 'av-rose'];
   let h = 0;
@@ -230,7 +226,7 @@ function avatarColor(name = '') {
   return colours[h % colours.length];
 }
 
-/** "2 hours ago" relative time */
+// "2 hours ago" relative time
 function timeAgo(ts) {
   const d = Date.now() - ts;
   if (d < 60000)          return 'Just now';
@@ -240,17 +236,7 @@ function timeAgo(ts) {
   return Math.floor(d / 86400000) + ' days ago';
 }
 
-/** Short date label */
-function shortDate(ts) {
-  return new Date(ts).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' });
-}
-
-/** Format time HH:MM */
-function fmtTime(ts) {
-  return new Date(ts).toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit' });
-}
-
-/** Open a bottom-sheet overlay and move keyboard focus into it */
+// Open a bottom-sheet overlay and move keyboard focus into it
 let lastFocused = null;
 function openSheet(id) {
   const el = document.getElementById(id);
@@ -264,7 +250,7 @@ function openSheet(id) {
   });
 }
 
-/** Close a bottom-sheet overlay and put focus back where it was */
+// Close a bottom-sheet overlay and put focus back where it was
 function closeSheet(id) {
   const el = document.getElementById(id);
   if (!el) return;
@@ -306,7 +292,7 @@ document.addEventListener('keydown', e => {
   }
 });
 
-/** Set the active nav item based on current page filename */
+// Set the active nav item based on current page filename
 function initNav() {
   const page = location.pathname.split('/').pop() || 'index.html';
   document.querySelectorAll('.nav-item').forEach(a => {
@@ -341,7 +327,7 @@ const TIMEZONES = [
   { label: 'New Zealand — Auckland',        value: 'Pacific/Auckland'  },
 ];
 
-/** Build a <select> of timezones, pre-selecting a value */
+// Build a <select> of timezones, pre-selecting a value
 function tzSelect(id, selectedValue, cls = '') {
   const opts = TIMEZONES.map(tz =>
     `<option value="${tz.value}" ${tz.value === selectedValue ? 'selected' : ''}>${tz.label}</option>`
