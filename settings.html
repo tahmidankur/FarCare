@@ -11,6 +11,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="FarCare">
+  <link rel="preload" href="fonts/nunito-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="style.css">
   <style>
     .tpl-edit-input {
@@ -60,7 +61,7 @@
     <div class="setting-row" role="button" tabindex="0" onclick="openTimezoneSheet()" style="cursor:pointer">
       <div class="setting-icon si-green" data-icon="home"></div>
       <div class="setting-info">
-        <div class="s-label">Family Timezone</div>
+        <div class="s-label">Default Family Timezone</div>
         <div class="s-sub" id="s-famtz-val">—</div>
       </div>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
@@ -95,7 +96,7 @@
     <div class="setting-row">
       <div style="flex:1;padding:2px 0">
         <div style="font-size:12px;color:var(--text-3);font-weight:600;line-height:1.5">
-          <span data-icon="info" data-size="14" style="vertical-align:-2px"></span> Reminders only fire while FarCare is open in your browser. For background reminders, a future update will add full PWA support.
+          <span data-icon="info" data-size="14" style="vertical-align:-2px"></span> For now, reminders only fire while FarCare is open. Reminders that arrive when the app is closed need a push server, which is planned.
         </div>
       </div>
     </div>
@@ -228,6 +229,21 @@
   </div>
 </div>
 
+<!-- Import confirm sheet -->
+<div id="import-sheet-overlay" class="sheet-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="import-title">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div style="text-align:center;padding:8px 0 22px">
+      <div class="big-icon big-icon--warn" data-icon="upload" data-size="28"></div>
+      <h2 id="import-title">Restore this backup?</h2>
+      <p id="import-summary" style="font-size:14px;color:var(--text-2);margin-top:6px;line-height:1.5"></p>
+    </div>
+    <button class="btn btn-primary btn-full" onclick="confirmImport()">Replace and restore</button>
+    <button class="btn btn-soft btn-full mt-8" onclick="closeSheet('import-sheet-overlay')">Cancel</button>
+  </div>
+</div>
+
+<script src="core.js"></script>
 <script src="storage.js"></script>
 <script>
 window.addEventListener('DOMContentLoaded', () => {
@@ -240,7 +256,7 @@ function renderSettings() {
   const settings = Storage.getSettings();
 
   document.getElementById('s-name-val').textContent   = user.name || 'Not set';
-  document.getElementById('s-mytz-val').textContent   = tzLabel(user.myTimezone  || 'America/Toronto');
+  document.getElementById('s-mytz-val').textContent   = tzLabel(Storage.tz());
   document.getElementById('s-famtz-val').textContent  = tzLabel(user.familyTimezone || 'Asia/Dhaka');
   document.getElementById('s-notif-val').textContent  = settings.notificationsEnabled ? 'On' : 'Off';
   document.getElementById('notif-toggle').checked     = settings.notificationsEnabled;
@@ -249,11 +265,6 @@ function renderSettings() {
   document.getElementById('about-history').textContent  = Storage.getHistory().length;
 
   renderTemplates();
-}
-
-function tzLabel(tz) {
-  const found = TIMEZONES.find(t => t.value === tz);
-  return found ? found.label : tz;
 }
 
 /* ---- Templates ---- */
@@ -277,8 +288,10 @@ function renderTemplates() {
 function saveTemplateText(idx, text) {
   const templates = Storage.getTemplates();
   if (templates[idx]) {
-    templates[idx].text = text.trim() || templates[idx].text;
-    Storage.setTemplates(templates);
+    const next = text.trim() || templates[idx].text;
+    if (next === templates[idx].text) return;
+    templates[idx].text = next;
+    if (Storage.setTemplates(templates)) showToast('Message saved', 'success');
   }
 }
 
@@ -316,7 +329,7 @@ function saveProfile() {
 /* ---- Timezone sheet ---- */
 function openTimezoneSheet() {
   const user = Storage.getUser();
-  document.getElementById('tz-my-wrap').innerHTML  = tzSelect('tz-my',  user.myTimezone  || 'America/Toronto');
+  document.getElementById('tz-my-wrap').innerHTML  = tzSelect('tz-my',  Storage.tz());
   document.getElementById('tz-fam-wrap').innerHTML = tzSelect('tz-fam', user.familyTimezone || 'Asia/Dhaka');
   openSheet('tz-sheet-overlay');
 }
@@ -377,21 +390,43 @@ function exportData() {
   showToast('Backup downloaded', 'success');
 }
 
+// Step 1: read and check the file, then ask before replacing anything
+let pendingImport = null;
 function importData(input) {
   const file = input.files[0];
   if (!file) return;
   const reader = new FileReader();
   reader.onload = e => {
-    try {
-      Storage.importData(e.target.result);
-      renderSettings();
-      showToast('Data imported', 'success');
-    } catch {
-      showToast('Invalid backup file', 'error');
-    }
     input.value = '';
+    try {
+      pendingImport = Storage.parseBackup(e.target.result);
+    } catch (err) {
+      pendingImport = null;
+      const msg = err instanceof SyntaxError || !err.message ? 'That file is not a FarCare backup' : err.message;
+      showToast(msg === 'Not a FarCare backup' ? 'That file is not a FarCare backup' : msg, 'error');
+      return;
+    }
+    const d = pendingImport;
+    const n = (arr, word) => arr ? `${arr.length} ${word}${arr.length === 1 ? '' : 's'}` : null;
+    const parts = [n(d.contacts, 'contact'), n(d.history, 'check-in'), n(d.templates, 'message')].filter(Boolean);
+    document.getElementById('import-summary').textContent =
+      `This backup has ${parts.join(', ') || 'your profile and settings'}. ` +
+      'It will replace what is on this device now.' +
+      (d.skipped ? ` ${d.skipped} damaged item${d.skipped === 1 ? '' : 's'} will be skipped.` : '');
+    openSheet('import-sheet-overlay');
   };
   reader.readAsText(file);
+}
+
+// Step 2: the user confirmed
+function confirmImport() {
+  if (!pendingImport) return;
+  const ok = Storage.applyBackup(pendingImport);
+  pendingImport = null;
+  closeSheet('import-sheet-overlay');
+  if (!ok) return;
+  renderSettings();
+  showToast('Backup restored', 'success');
 }
 
 /* ---- Reset ---- */
@@ -405,7 +440,7 @@ function resetAll() {
 
 /* close on backdrop */
 document.addEventListener('click', e => {
-  ['profile-sheet-overlay','tz-sheet-overlay','reset-sheet-overlay'].forEach(id => {
+  ['profile-sheet-overlay','tz-sheet-overlay','reset-sheet-overlay','import-sheet-overlay'].forEach(id => {
     if (e.target === document.getElementById(id)) closeSheet(id);
   });
 });
