@@ -2,7 +2,11 @@
    FarCare Service Worker — Offline-first PWA
    ========================================================= */
 
-const CACHE_NAME = 'farcare-v2';
+// Bump this whenever CORE_ASSETS or their contents change
+const CACHE_NAME = 'farcare-v3';
+
+// How long to wait for the network before using the cached page
+const NETWORK_TIMEOUT_MS = 3000;
 
 const CORE_ASSETS = [
   './',
@@ -11,7 +15,9 @@ const CORE_ASSETS = [
   './history.html',
   './settings.html',
   './style.css',
+  './core.js',
   './storage.js',
+  './fonts/nunito-latin-wght-normal.woff2',
   './manifest.json',
   './icons/icon.svg',
 ];
@@ -46,45 +52,35 @@ self.addEventListener('activate', (e) => {
   );
 });
 
-// ── Fetch: offline-first strategy ───────────────────────
+// ── Fetch: network-first with a deadline ───────────────────────
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
 
   const url = new URL(e.request.url);
 
-  // Google Fonts — stale-while-revalidate so they work offline after first load
-  if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com') {
-    e.respondWith(
-      caches.open(CACHE_NAME).then((cache) =>
-        cache.match(e.request).then((cached) => {
-          const fresh = fetch(e.request).then((r) => {
-            if (r.ok) cache.put(e.request, r.clone());
-            return r;
-          }).catch(() => cached);
-          return cached || fresh;
-        })
-      )
-    );
-    return;
-  }
-
   // Same-origin files: try the network first so updates show up right away,
-  // and fall back to the cached copy when offline
+  // and fall back to the cached copy when offline. If the network is slow
+  // (weak Wi-Fi) and we have a cached copy, use it after 3 seconds.
   if (url.origin === self.location.origin) {
-    e.respondWith(
-      fetch(e.request)
-        .then((r) => {
-          if (r.ok) {
-            const copy = r.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(e.request, copy));
-          }
-          return r;
-        })
-        .catch(() => caches.match(e.request)
-          .then((cached) => cached || new Response('Offline', { status: 503 })))
-    );
+    e.respondWith(networkFirst(e.request));
   }
 });
+
+async function networkFirst(request) {
+  const cache = await caches.open(CACHE_NAME);
+  const network = fetch(request).then((r) => {
+    if (r.ok) cache.put(request, r.clone());
+    return r;
+  });
+
+  const cached = await cache.match(request, { ignoreSearch: request.mode === 'navigate' });
+  if (!cached) {
+    return network.catch(() => new Response('Offline', { status: 503 }));
+  }
+  const timeout = new Promise((resolve) => setTimeout(() => resolve(cached), NETWORK_TIMEOUT_MS));
+  // Whichever comes first: a fresh response, or the cached one after the deadline
+  return Promise.race([network.catch(() => cached), timeout]);
+}
 
 // ── Push notifications (for future server integration) ──
 self.addEventListener('push', (e) => {

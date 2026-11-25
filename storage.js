@@ -16,41 +16,73 @@ const Storage = {
     try { return JSON.parse(localStorage.getItem(key)); }
     catch { return null; }
   },
-  _set(key, val) { localStorage.setItem(key, JSON.stringify(val)); },
+  // Returns false (and tells the user) if the browser refuses to save,
+  // e.g. storage is full or turned off in private mode
+  _set(key, val) {
+    try {
+      localStorage.setItem(key, JSON.stringify(val));
+      return true;
+    } catch (err) {
+      console.error('FarCare could not save', key, err);
+      if (typeof showToast === 'function') {
+        showToast("Couldn't save. Your browser's storage is full or turned off.", 'error');
+      }
+      return false;
+    }
+  },
 
   /* ---- User ---- */
-  getUser()      { return this._get(this.KEYS.USER) || { name: '', myTimezone: 'America/Toronto', familyTimezone: 'Asia/Dhaka' }; },
-  setUser(data)  { this._set(this.KEYS.USER, { ...this.getUser(), ...data }); },
+  getUser() {
+    const saved = this._get(this.KEYS.USER);
+    return {
+      name: '',
+      myTimezone: FarCore.detectTimezone(),
+      familyTimezone: 'Asia/Dhaka',
+      ...(saved && typeof saved === 'object' ? saved : {}),
+    };
+  },
+  setUser(data)  { return this._set(this.KEYS.USER, { ...this.getUser(), ...data }); },
+  // The timezone every "today" is worked out in
+  tz() { return this.getUser().myTimezone || FarCore.detectTimezone(); },
 
   /* ---- Contacts ---- */
-  getContacts()  { return this._get(this.KEYS.CONTACTS) || []; },
-  setContacts(a) { this._set(this.KEYS.CONTACTS, a); },
+  getContacts()  { const v = this._get(this.KEYS.CONTACTS); return Array.isArray(v) ? v : []; },
+  setContacts(a) { return this._set(this.KEYS.CONTACTS, a); },
   addContact(c) {
     c.id = 'c_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
     const list = this.getContacts();
     list.push(c);
-    this.setContacts(list);
-    return c;
+    return this.setContacts(list) ? c : null;
   },
   updateContact(id, data) {
-    this.setContacts(this.getContacts().map(c => c.id === id ? { ...c, ...data } : c));
+    return this.setContacts(this.getContacts().map(c => c.id === id ? { ...c, ...data } : c));
   },
   deleteContact(id) {
-    this.setContacts(this.getContacts().filter(c => c.id !== id));
+    return this.setContacts(this.getContacts().filter(c => c.id !== id));
   },
   getContact(id) { return this.getContacts().find(c => c.id === id) || null; },
 
-  /* ---- History ---- */
-  getHistory()   { return this._get(this.KEYS.HISTORY) || []; },
+  /* ---- History ----
+     A check-in starts as status "pending" when WhatsApp or email opens,
+     and only counts once the user says it was sent. Entries saved by
+     older versions have no status and count as sent. */
+  getHistory()     { const v = this._get(this.KEYS.HISTORY); return Array.isArray(v) ? v : []; },
+  getSentHistory() { return this.getHistory().filter(FarCore.counts); },
   addHistory(entry) {
-    entry.id        = 'h_' + Date.now();
+    entry.id        = 'h_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
     entry.timestamp = Date.now();
     const list = this.getHistory();
     list.unshift(entry);
-    this._set(this.KEYS.HISTORY, list);
-    return entry;
+    return this._set(this.KEYS.HISTORY, list) ? entry : null;
   },
-  clearHistory() { this._set(this.KEYS.HISTORY, []); },
+  updateHistory(id, data) {
+    return this._set(this.KEYS.HISTORY, this.getHistory().map(h => h.id === id ? { ...h, ...data } : h));
+  },
+  deleteHistory(id) {
+    return this._set(this.KEYS.HISTORY, this.getHistory().filter(h => h.id !== id));
+  },
+  getPendingCheckin() { return this.getHistory().find(h => h.status === 'pending') || null; },
+  clearHistory() { return this._set(this.KEYS.HISTORY, []); },
 
   /* ---- Settings ---- */
   getSettings() {
@@ -60,54 +92,30 @@ const Storage = {
       theme: 'light',
     };
   },
-  setSettings(data) { this._set(this.KEYS.SETTINGS, { ...this.getSettings(), ...data }); },
+  setSettings(data) { return this._set(this.KEYS.SETTINGS, { ...this.getSettings(), ...data }); },
 
   /* ---- Templates ---- */
+  // Always returns at least one usable template, so the check-in sheet can't break
   getTemplates() {
-    return this._get(this.KEYS.TEMPLATES) || this.defaultTemplates();
+    const saved = this._get(this.KEYS.TEMPLATES);
+    const usable = Array.isArray(saved)
+      ? saved.filter(t => t && typeof t.text === 'string' && t.text.trim())
+      : [];
+    return usable.length ? usable : this.defaultTemplates();
   },
-  setTemplates(arr) { this._set(this.KEYS.TEMPLATES, arr); },
-  defaultTemplates() {
-    return [
-      { id: 't1', text: "I'm okay! Everything is fine. Don't worry about me",        category: 'general' },
-      { id: 't2', text: "Busy with class/work but safe. I'll call you later!",           category: 'general' },
-      { id: 't3', text: "I reached home safely",                                         category: 'arrival' },
-      { id: 't4', text: "Good morning from Canada! Doing well today",                    category: 'morning' },
-      { id: 't5', text: "Goodnight! Love you lots",                                      category: 'night'   },
-      { id: 't6', text: "Everything is fine. I'll call when I'm free",                  category: 'general' },
-    ];
-  },
+  setTemplates(arr) { return this._set(this.KEYS.TEMPLATES, arr); },
+  defaultTemplates() { return FarCore.DEFAULT_TEMPLATES.map(t => ({ ...t })); },
 
   /* ---- Onboarding ---- */
   isOnboarded()  { return !!this._get(this.KEYS.ONBOARDED); },
   setOnboarded() { this._set(this.KEYS.ONBOARDED, true); },
 
   /* ---- Stats ---- */
-  getStreak() {
-    const history = this.getHistory();
-    if (!history.length) return 0;
-    const days = new Set(history.map(h => new Date(h.timestamp).toDateString()));
-    let streak = 0;
-    let cur    = new Date();
-    // if no checkin today, start counting from yesterday
-    if (!days.has(cur.toDateString())) {
-      cur = new Date(cur.getTime() - 86400000);
-    }
-    while (days.has(cur.toDateString())) {
-      streak++;
-      cur = new Date(cur.getTime() - 86400000);
-    }
-    return streak;
-  },
-
+  // Both use the profile timezone and step whole calendar days, so a
+  // daylight-saving change or a flight doesn't shift the count
+  getStreak()        { return FarCore.streak(this.getHistory(), this.tz()); },
   // Counts calendar days, so 1 means the last check-in was yesterday
-  getDaysSinceLast() {
-    const h = this.getHistory();
-    if (!h.length) return null;
-    const last  = new Date(h[0].timestamp); last.setHours(0, 0, 0, 0);
-    const today = new Date();               today.setHours(0, 0, 0, 0);
-    return Math.round((today - last) / 86400000);
-  },
+  getDaysSinceLast() { return FarCore.daysSinceLast(this.getHistory(), this.tz()); },
 
   /* ---- Backup ---- */
   exportData() {
@@ -121,19 +129,21 @@ const Storage = {
       templates: this.getTemplates(),
     }, null, 2);
   },
-  importData(jsonStr) {
-    const d = JSON.parse(jsonStr);
-    // Make sure this really is a FarCare backup before overwriting anything
-    if (!d || !d.farcare_version) throw new Error('Not a FarCare backup');
-    for (const key of ['contacts', 'history', 'templates']) {
-      if (d[key] && !Array.isArray(d[key])) throw new Error('Bad ' + key);
-    }
-    if (d.user)      this._set(this.KEYS.USER,      d.user);
-    if (d.contacts)  this._set(this.KEYS.CONTACTS,  d.contacts);
-    if (d.history)   this._set(this.KEYS.HISTORY,   d.history);
-    if (d.settings)  this._set(this.KEYS.SETTINGS,  d.settings);
-    if (d.templates) this._set(this.KEYS.TEMPLATES, d.templates);
+  // Parse and check a backup without saving anything. Throws if it can't
+  // be used; otherwise returns a cleaned copy (bad items dropped)
+  parseBackup(jsonStr) { return FarCore.sanitizeBackup(JSON.parse(jsonStr)); },
+  // Save a backup that parseBackup() already cleaned
+  applyBackup(d) {
+    let ok = true;
+    if (d.user)      ok = this._set(this.KEYS.USER,      d.user)      && ok;
+    if (d.contacts)  ok = this._set(this.KEYS.CONTACTS,  d.contacts)  && ok;
+    if (d.history)   ok = this._set(this.KEYS.HISTORY,   d.history)   && ok;
+    if (d.settings)  ok = this._set(this.KEYS.SETTINGS,  d.settings)  && ok;
+    if (d.templates) ok = this._set(this.KEYS.TEMPLATES, d.templates) && ok;
+    if (ok) this.setOnboarded();
+    return ok;
   },
+  importData(jsonStr) { return this.applyBackup(this.parseBackup(jsonStr)); },
 };
 
 /* =========================================================
@@ -243,6 +253,7 @@ function openSheet(id) {
   if (!el) return;
   lastFocused = document.activeElement;
   el.style.display = 'flex';
+  setBackgroundInert(true);
   requestAnimationFrame(() => {
     el.classList.add('open');
     const first = focusableIn(el)[0];
@@ -255,8 +266,18 @@ function closeSheet(id) {
   const el = document.getElementById(id);
   if (!el) return;
   el.classList.remove('open');
+  // Un-inert first so focus can go back to the page
+  if (!document.querySelector('.sheet-overlay.open')) setBackgroundInert(false);
   setTimeout(() => { el.style.display = 'none'; }, 300);
   if (lastFocused && document.contains(lastFocused)) lastFocused.focus();
+}
+
+// Hide the page behind an open sheet from screen readers and the keyboard
+function setBackgroundInert(on) {
+  const app = document.querySelector('.app');
+  if (!app) return;
+  if (on) app.setAttribute('inert', '');
+  else    app.removeAttribute('inert');
 }
 
 function focusableIn(el) {
@@ -292,6 +313,75 @@ document.addEventListener('keydown', e => {
   }
 });
 
+/* =========================================================
+   Sending a check-in (shared by the dashboard and Contacts)
+   1. Build the WhatsApp/email link and open it
+   2. Save the check-in as "pending"
+   3. Ask "Did it send?" so history only counts real sends
+   ========================================================= */
+function sendCheckin(contact, message, method, onDone) {
+  const link = FarCore.buildSendUrl(method, contact, message);
+  if (!link.ok) { showToast(link.error, 'error'); return false; }
+
+  const entry = Storage.addHistory({
+    contactId: contact.id, contactName: contact.name,
+    message, method, status: 'pending',
+  });
+  if (!entry) return false;
+
+  if (method === 'email') window.location.href = link.url;
+  else window.open(link.url, '_blank', 'noopener');
+
+  askDidItSend(entry, onDone);
+  return true;
+}
+
+function askDidItSend(entry, onDone) {
+  let el = document.getElementById('sent-check-overlay');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'sent-check-overlay';
+    el.className = 'sheet-overlay';
+    el.style.display = 'none';
+    el.setAttribute('role', 'dialog');
+    el.setAttribute('aria-modal', 'true');
+    el.setAttribute('aria-labelledby', 'sent-check-title');
+    el.innerHTML = `
+      <div class="sheet">
+        <div class="sheet-handle"></div>
+        <h2 id="sent-check-title">Did your message send?</h2>
+        <p class="sheet-sub" id="sent-check-sub"></p>
+        <button class="btn btn-safe btn-full" data-sent="yes">Yes, it sent</button>
+        <button class="btn btn-soft btn-full mt-8" data-sent="no">Not yet</button>
+      </div>`;
+    document.body.appendChild(el);
+  }
+  const app = method => method === 'email' ? 'your email app' : 'WhatsApp';
+  el.querySelector('#sent-check-sub').textContent =
+    `We opened ${app(entry.method)} with your message to ${entry.contactName}. It only counts once you've tapped Send there.`;
+
+  el.onclick = e => {
+    const btn = e.target.closest('[data-sent]');
+    if (!btn) return;
+    if (btn.dataset.sent === 'yes') {
+      Storage.updateHistory(entry.id, { status: 'sent' });
+      showToast('Check-in saved', 'success');
+    } else {
+      Storage.deleteHistory(entry.id);
+      showToast('Not counted. Try again when you are ready.', 'default');
+    }
+    closeSheet('sent-check-overlay');
+    if (onDone) onDone();
+  };
+  openSheet('sent-check-overlay');
+}
+
+// If the app was closed before answering, ask on the next visit
+function resumePendingCheckin(onDone) {
+  const pending = Storage.getPendingCheckin();
+  if (pending) askDidItSend(pending, onDone);
+}
+
 // Set the active nav item based on current page filename
 function initNav() {
   const page = location.pathname.split('/').pop() || 'index.html';
@@ -305,35 +395,51 @@ function initNav() {
   });
 }
 
-/* ---- Timezone list ---- */
-const TIMEZONES = [
-  { label: 'Canada — Vancouver (PT)',      value: 'America/Vancouver' },
-  { label: 'Canada — Calgary (MT)',         value: 'America/Edmonton'  },
-  { label: 'Canada — Toronto (ET)',         value: 'America/Toronto'   },
-  { label: 'Canada — Halifax (AT)',         value: 'America/Halifax'   },
-  { label: 'USA — New York (ET)',           value: 'America/New_York'  },
-  { label: 'USA — Chicago (CT)',            value: 'America/Chicago'   },
-  { label: 'USA — Los Angeles (PT)',        value: 'America/Los_Angeles'},
-  { label: 'UK — London',                   value: 'Europe/London'     },
-  { label: 'Europe — Paris / Berlin',       value: 'Europe/Paris'      },
-  { label: 'Bangladesh — Dhaka (BST +6)',   value: 'Asia/Dhaka'        },
-  { label: 'India — Kolkata (IST +5:30)',   value: 'Asia/Kolkata'      },
-  { label: 'Pakistan — Karachi (PKT +5)',   value: 'Asia/Karachi'      },
-  { label: 'UAE — Dubai (+4)',              value: 'Asia/Dubai'        },
-  { label: 'Singapore (+8)',                value: 'Asia/Singapore'    },
-  { label: 'China — Shanghai (+8)',         value: 'Asia/Shanghai'     },
-  { label: 'Japan — Tokyo (+9)',            value: 'Asia/Tokyo'        },
-  { label: 'Australia — Sydney',           value: 'Australia/Sydney'  },
-  { label: 'New Zealand — Auckland',        value: 'Pacific/Auckland'  },
-];
+/* ---- Timezone picker ----
+   Every zone the browser knows, grouped by region, with a search box. */
+function tzLabel(tz) { return FarCore.tzLabel(tz); }
 
-// Build a <select> of timezones, pre-selecting a value
 function tzSelect(id, selectedValue, cls = '') {
-  const opts = TIMEZONES.map(tz =>
-    `<option value="${tz.value}" ${tz.value === selectedValue ? 'selected' : ''}>${tz.label}</option>`
-  ).join('');
-  return `<select id="${id}" class="form-input form-select ${cls}">${opts}</select>`;
+  const selected = FarCore.isValidTimezone(selectedValue) ? selectedValue : FarCore.detectTimezone();
+  const now = Date.now();
+  const groups = {};
+  for (const tz of FarCore.allTimezones()) {
+    (groups[FarCore.tzRegion(tz)] ||= []).push(tz);
+  }
+  const opts = Object.keys(groups).sort().map(region => {
+    const items = groups[region]
+      .map(tz => ({ tz, label: FarCore.tzLabel(tz, now) }))
+      .sort((a, b) => a.label.localeCompare(b.label))
+      .map(({ tz, label }) =>
+        `<option value="${escapeHtml(tz)}" ${tz === selected ? 'selected' : ''}>${escapeHtml(label)}</option>`)
+      .join('');
+    return `<optgroup label="${escapeHtml(region.replace(/_/g, ' '))}">${items}</optgroup>`;
+  }).join('');
+  return `<input type="search" class="form-input tz-search" placeholder="Search a city, e.g. Lagos"
+            aria-label="Search timezones" data-tz-filter="${escapeHtml(id)}" autocomplete="off">
+          <select id="${escapeHtml(id)}" class="form-input form-select ${cls}">${opts}</select>`;
 }
+
+// Filter a timezone <select> as the user types in its search box
+document.addEventListener('input', e => {
+  const box = e.target.closest && e.target.closest('[data-tz-filter]');
+  if (!box) return;
+  const select = document.getElementById(box.dataset.tzFilter);
+  if (!select) return;
+  const q = box.value.trim().toLowerCase();
+  let first = null;
+  select.querySelectorAll('option').forEach(o => {
+    const hay = (o.value.replace(/_/g, ' ') + ' ' + o.textContent).toLowerCase();
+    const hit = !q || hay.includes(q);
+    o.hidden = !hit;
+    if (hit && !first) first = o;
+  });
+  select.querySelectorAll('optgroup').forEach(g => {
+    g.hidden = ![...g.children].some(o => !o.hidden);
+  });
+  const cur = select.selectedOptions[0];
+  if (first && (!cur || cur.hidden)) select.value = first.value;
+});
 
 /* =========================================================
    Daily reminder

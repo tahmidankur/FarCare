@@ -11,6 +11,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="FarCare">
+  <link rel="preload" href="fonts/nunito-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -71,16 +72,20 @@
   </div>
 </div>
 
+<script src="core.js"></script>
 <script src="storage.js"></script>
 <script>
 window.addEventListener('DOMContentLoaded', () => {
   initNav();
   renderHistory();
+  resumePendingCheckin(renderHistory);
 });
 
 function renderHistory() {
-  const history = Storage.getHistory();
+  // Only check-ins the user confirmed were sent
+  const history = Storage.getSentHistory();
   const listEl  = document.getElementById('history-list');
+  const tz      = Storage.tz();
 
   document.getElementById('hist-count').textContent =
     history.length ? history.length + ' check-in' + (history.length !== 1 ? 's' : '') : 'No check-ins yet';
@@ -104,21 +109,17 @@ function renderHistory() {
   const uniqueContacts = new Set(history.map(h => h.contactId || h.contactName)).size;
   document.getElementById('stat-contacts').textContent = uniqueContacts;
 
-  // group by date
+  // Group by calendar day in the profile timezone (not the device clock),
+  // so a trip or a daylight-saving change doesn't move entries between days
   const groups = {};
-  history.forEach(h => {
-    const key = new Date(h.timestamp).toDateString();
-    if (!groups[key]) groups[key] = [];
-    groups[key].push(h);
+  [...history].sort((a, b) => b.timestamp - a.timestamp).forEach(h => {
+    const key = FarCore.dateKey(h.timestamp, tz);
+    (groups[key] ||= []).push(h);
   });
 
-  const todayStr     = new Date().toDateString();
-  const yesterdayStr = new Date(Date.now() - 86400000).toDateString();
-
-  listEl.innerHTML = Object.entries(groups).map(([dateStr, items]) => {
-    const label = dateStr === todayStr ? 'Today' :
-                  dateStr === yesterdayStr ? 'Yesterday' :
-                  new Date(dateStr).toLocaleDateString('en-CA', { weekday:'long', month:'long', day:'numeric' });
+  listEl.innerHTML = Object.entries(groups).map(([dateKey, items]) => {
+    const label = FarCore.relativeDayLabel(items[0].timestamp, tz) ||
+                  new Date(items[0].timestamp).toLocaleDateString('en-CA', { timeZone: tz, weekday:'long', month:'long', day:'numeric' });
     const rows = items.map(h => `
       <div class="history-item">
         <div class="avatar avatar-md ${avatarColor(h.contactName)}">${initials(h.contactName)}</div>

@@ -1,0 +1,22 @@
+{
+  "name": "farcare",
+  "version": "1.1.0",
+  "private": true,
+  "description": "One-tap \"I'm okay\" check-ins for family abroad, installable as a PWA",
+  "scripts": {
+    "serve": "node scripts/serve.mjs",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "fonts": "node scripts/copy-fonts.mjs"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "@fontsource-variable/nunito": "^5.0.0",
+    "@playwright/test": "^1.48.0",
+    "eslint": "^9.0.0",
+    "globals": "^15.0.0",
+    "vitest": "^3.0.0"
+  }
+}

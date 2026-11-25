@@ -1,4 +1,5 @@
 {
+  "id": "/",
   "name": "FarCare",
   "short_name": "FarCare",
   "description": "Quick I'm-okay check-ins for loved ones far away. Zero sign-up, works offline.",
@@ -8,7 +9,10 @@
   "orientation": "portrait",
   "background_color": "#2A6E8C",
   "theme_color": "#2A6E8C",
-  "categories": ["communication", "utilities"],
+  "categories": [
+    "communication",
+    "utilities"
+  ],
   "lang": "en",
   "icons": [
     {
@@ -48,7 +52,12 @@
       "short_name": "Check In",
       "description": "Open FarCare and send an I'm Okay message",
       "url": "./index.html",
-      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+      "icons": [
+        {
+          "src": "icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
     }
   ],
   "screenshots": []

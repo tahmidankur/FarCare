@@ -11,6 +11,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="FarCare">
+  <link rel="preload" href="fonts/nunito-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="style.css">
   <style>
     .contact-card {
@@ -108,7 +109,8 @@
     </div>
     <div class="form-group" id="cs-phone-group">
       <label class="form-label" for="cs-phone">WhatsApp number (with country code)</label>
-      <input class="form-input" id="cs-phone" type="tel" placeholder="+880 1XXX XXXXXX">
+      <input class="form-input" id="cs-phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="+880 1712 345678" aria-describedby="cs-phone-help">
+      <div class="form-help" id="cs-phone-help">Include the + and country code. <button type="button" class="link-btn" onclick="testPhoneLink()">Test this number</button></div>
     </div>
     <div class="form-group" id="cs-email-group" style="display:none">
       <label class="form-label" for="cs-email">Email address</label>
@@ -155,6 +157,7 @@
   </div>
 </div>
 
+<script src="core.js"></script>
 <script src="storage.js"></script>
 <script>
 let csMethodSelected = 'whatsapp';
@@ -162,7 +165,16 @@ let csMethodSelected = 'whatsapp';
 window.addEventListener('DOMContentLoaded', () => {
   initNav();
   renderContacts();
+  resumePendingCheckin();
 });
+
+// Opens a WhatsApp chat with the typed number (no message) to check it's right
+function testPhoneLink() {
+  const p = FarCore.normalizePhone(document.getElementById('cs-phone').value);
+  if (!p.ok) { showToast(p.error, 'error'); return; }
+  document.getElementById('cs-phone').value = FarCore.formatPhone(p.value);
+  window.open('https://wa.me/' + p.value.slice(1), '_blank', 'noopener');
+}
 
 /* ---- Render list ---- */
 function renderContacts() {
@@ -184,7 +196,7 @@ function renderContacts() {
   }
 
   list.innerHTML = contacts.map(c => {
-    const detail = c.preferredMethod === 'whatsapp' ? (c.phone || 'No number') : (c.email || 'No email');
+    const detail = c.preferredMethod === 'email' ? (c.email || 'No email') : (FarCore.formatPhone(c.phone) || 'No number');
     return `
     <div class="contact-card" data-id="${escapeHtml(c.id)}">
       <div class="contact-main">
@@ -193,6 +205,7 @@ function renderContacts() {
           <div class="cn">${escapeHtml(c.name)}</div>
           <div class="cr">${escapeHtml(c.relationship || 'Contact')}</div>
           <div class="cc">${methodLabel(c.preferredMethod)} · ${escapeHtml(detail)}</div>
+          <div class="cc">${escapeHtml(tzLabel(c.timezone))}</div>
         </div>
       </div>
       <div class="contact-actions">
@@ -221,7 +234,7 @@ function openAddSheet() {
   document.getElementById('cs-rel').value   = '';
   document.getElementById('cs-phone').value = '';
   document.getElementById('cs-email').value = '';
-  document.getElementById('cs-tz-wrap').innerHTML = tzSelect('cs-tz', 'Asia/Dhaka');
+  document.getElementById('cs-tz-wrap').innerHTML = tzSelect('cs-tz', Storage.getUser().familyTimezone || 'Asia/Dhaka');
   csMethodSelected = 'whatsapp';
   document.querySelectorAll('#cs-method .method-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.method === 'whatsapp');
@@ -241,7 +254,7 @@ function openEditSheet(id) {
   document.getElementById('cs-id').value    = id;
   document.getElementById('cs-name').value  = c.name  || '';
   document.getElementById('cs-rel').value   = c.relationship || '';
-  document.getElementById('cs-phone').value = c.phone || '';
+  document.getElementById('cs-phone').value = FarCore.formatPhone(c.phone) || c.phone || '';
   document.getElementById('cs-email').value = c.email || '';
   document.getElementById('cs-tz-wrap').innerHTML = tzSelect('cs-tz', c.timezone || 'Asia/Dhaka');
   csMethodSelected = c.preferredMethod || 'whatsapp';
@@ -274,17 +287,17 @@ function saveContact() {
   const email = document.getElementById('cs-email').value.trim();
   const id    = document.getElementById('cs-id').value;
 
-  if (!name) { showToast('Please enter a name', 'error'); return; }
-  if (csMethodSelected === 'whatsapp' && !phone) { showToast('Please enter a phone number', 'error'); return; }
-  if (csMethodSelected === 'email'    && !email) { showToast('Please enter an email address', 'error'); return; }
+  // Checks the number is a full international one (wa.me needs that) and the email is real-looking
+  const check = FarCore.validateContact({ name, relationship:rel, timezone:tz, preferredMethod:csMethodSelected, phone, email });
+  if (!check.ok) { showToast(check.error, 'error'); return; }
+  const data = check.value;
 
-  const data = { name, relationship:rel, timezone:tz, preferredMethod:csMethodSelected, phone, email };
   if (id) {
-    Storage.updateContact(id, data);
-    showToast(name + ' updated', 'success');
+    if (!Storage.updateContact(id, data)) return;
+    showToast(data.name + ' updated', 'success');
   } else {
-    Storage.addContact(data);
-    showToast(name + ' added', 'success');
+    if (!Storage.addContact(data)) return;
+    showToast(data.name + ' added', 'success');
   }
   closeSheet('contact-sheet-overlay');
   renderContacts();
@@ -340,22 +353,14 @@ function sendQuickCheckin(contactId, tplId) {
   const contact  = Storage.getContact(contactId);
   const template = Storage.getTemplates().find(t => t.id === tplId);
   if (!contact || !template) return;
-  const msg = template.text;
+  const method = contact.preferredMethod === 'email' ? 'email' : 'whatsapp';
 
-  if (contact.preferredMethod === 'whatsapp') {
-    const phone = (contact.phone || '').replace(/\D/g,'');
-    if (!phone) { showToast('No WhatsApp number saved', 'error'); return; }
-    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
-  } else {
-    if (!contact.email) { showToast('No email address saved', 'error'); return; }
-    window.location.href = `mailto:${contact.email}?subject=${encodeURIComponent('FarCare Check-In')}&body=${encodeURIComponent(msg)}`;
-  }
-  Storage.addHistory({ contactId, contactName:contact.name, message:msg, method:contact.preferredMethod });
+  const link = FarCore.buildSendUrl(method, contact, template.text);
+  if (!link.ok) { showToast(link.error + '. Edit the contact to fix it.', 'error'); return; }
+
+  // Same flow as the dashboard: open, save as pending, ask "Did it send?"
   closeSheet('quick-ci-overlay');
-  const sentMsg = contact.preferredMethod === 'email'
-    ? 'Email opened, tap Send there'
-    : 'WhatsApp opened, tap Send there';
-  showToast(sentMsg, 'success');
+  sendCheckin(contact, template.text, method);
 }
 
 /* close sheet on overlay tap */

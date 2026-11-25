@@ -12,6 +12,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="FarCare">
   <meta name="description" content="Quick I'm-okay check-ins for loved ones far away.">
+  <link rel="preload" href="fonts/nunito-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="style.css">
   <style>
     /* ---- Contact selector tabs ---- */
@@ -46,7 +47,10 @@
       margin-bottom:14px; cursor:pointer; border:2px solid transparent;
       transition:border-color var(--transition);
     }
-    .msg-preview:hover { border-color:var(--primary); }
+    .msg-preview:hover, .msg-preview:focus { border-color:var(--primary); outline:none; }
+    textarea.msg-preview { width:100%; resize:vertical; min-height:72px; font-family:var(--font); cursor:text; display:block; }
+    .fam-hint { font-size:12px; color:var(--text-3); font-weight:600; margin-top:3px; }
+    .ob-restore { display:block; margin:14px auto 0; background:none; border:none; font-family:var(--font); font-size:13px; font-weight:700; color:var(--primary); cursor:pointer; text-decoration:underline; }
     .msg-preview-label { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.07em; color:var(--text-3); margin-bottom:8px; }
     .method-row { display:flex; gap:8px; margin-bottom:20px; }
     .meth-btn {
@@ -88,6 +92,7 @@
         <div class="tz-date" id="fam-date">--</div>
       </div>
     </div>
+    <div class="fam-hint" id="fam-hint" style="text-align:center"></div>
   </div>
 
   <!-- ===== MISSED BANNER ===== -->
@@ -194,6 +199,8 @@
         <div id="ob-mytz-wrap"></div>
       </div>
       <button class="btn btn-primary btn-full mt-12" onclick="obNext(0)">Continue →</button>
+      <button class="ob-restore" type="button" onclick="document.getElementById('ob-import-file').click()">Moving phones? Restore from a backup</button>
+      <input type="file" id="ob-import-file" accept=".json,application/json" style="display:none" onchange="obRestore(this)">
     </div>
 
     <!-- Step 2: First contact -->
@@ -225,7 +232,8 @@
       </div>
       <div class="form-group" id="ob-phone-group">
         <label class="form-label" for="ob-phone">Their WhatsApp number</label>
-        <input class="form-input" id="ob-phone" type="tel" placeholder="+880 1XXX XXXXXX">
+        <input class="form-input" id="ob-phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="+880 1712 345678" aria-describedby="ob-phone-help">
+        <div class="form-help" id="ob-phone-help">Include the + and country code.</div>
       </div>
       <div class="form-group" id="ob-email-group" style="display:none">
         <label class="form-label" for="ob-email">Their email address</label>
@@ -262,7 +270,7 @@
   <div class="sheet">
     <div class="sheet-handle"></div>
     <h2 id="ci-title">Send a Check-In</h2>
-    <p class="sheet-sub">Review your message and send it now.</p>
+    <p class="sheet-sub">Pick a message, edit it if you like, then send.</p>
 
     <!-- Contact info -->
     <div class="confirm-contact" id="ci-contact">
@@ -274,9 +282,8 @@
     <div id="ci-tpl-chips" class="chips-scroll mb-16">
       <!-- template chips filled by JS -->
     </div>
-    <div class="msg-preview" id="ci-msg-preview" role="button" tabindex="0" title="Tap to try the next message" onclick="cycleTemplate()">
-      <!-- filled by JS -->
-    </div>
+    <label class="sr-only" for="ci-msg-preview">Message to send</label>
+    <textarea class="msg-preview" id="ci-msg-preview" rows="3" maxlength="1000"></textarea>
 
     <!-- Method picker -->
     <div class="msg-preview-label">Send via</div>
@@ -304,6 +311,7 @@
   </div>
 </div>
 
+<script src="core.js"></script>
 <script src="storage.js"></script>
 <script>
 /* =====================================================
@@ -325,15 +333,42 @@ window.addEventListener('DOMContentLoaded', () => {
     new Date().toLocaleDateString('en-CA', { weekday:'long', month:'long', day:'numeric' });
 
   if (!Storage.isOnboarded()) {
-    // populate onboarding timezone selects
+    // populate onboarding timezone selects (yours defaults to this device's)
     const user = Storage.getUser();
     document.getElementById('ob-mytz-wrap').innerHTML  = tzSelect('ob-mytz',  user.myTimezone);
     document.getElementById('ob-famtz-wrap').innerHTML = tzSelect('ob-famtz', user.familyTimezone);
     openSheet('onboarding-overlay');
   } else {
     renderDashboard();
+    resumePendingCheckin(renderDashboard);
   }
 });
+
+// Pause the clock while the page is hidden
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { clearInterval(tzInterval); tzInterval = null; }
+  else if (Storage.isOnboarded()) updateFamilyClock();
+});
+
+/* Restore a backup straight from onboarding (new phone) */
+function obRestore(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = Storage.parseBackup(e.target.result);
+      if (!Storage.applyBackup(data)) return;
+      closeSheet('onboarding-overlay');
+      renderDashboard();
+      showToast('Backup restored', 'success');
+    } catch (err) {
+      showToast(err.message && err.message.includes('template') ? err.message : 'That file is not a FarCare backup', 'error');
+    }
+    input.value = '';
+  };
+  reader.readAsText(file);
+}
 
 /* =====================================================
    ONBOARDING
@@ -356,10 +391,10 @@ function obNext(from) {
     const method = obMethodSelected;
     const phone  = document.getElementById('ob-phone').value.trim();
     const email  = document.getElementById('ob-email').value.trim();
-    if (!cname) { showToast('Please enter a name', 'error'); return; }
-    if (method === 'whatsapp' && !phone) { showToast('Please enter their number', 'error'); return; }
-    if (method === 'email'    && !email) { showToast('Please enter their email',  'error'); return; }
-    obContact = { name:cname, relationship:crel, timezone:famTz, preferredMethod:method, phone, email };
+    const check = FarCore.validateContact({ name:cname, relationship:crel, timezone:famTz, preferredMethod:method, phone, email });
+    if (!check.ok) { showToast(check.error, 'error'); return; }
+    obContact = check.value;
+    if (method === 'whatsapp') document.getElementById('ob-phone').value = FarCore.formatPhone(obContact.phone);
     // populate summary
     document.getElementById('ob-summary').innerHTML = `
       <div style="display:flex;align-items:center;gap:12px">
@@ -367,6 +402,7 @@ function obNext(from) {
         <div>
           <div style="font-weight:800;font-size:15px">${escapeHtml(cname)}</div>
           <div style="font-size:13px;color:var(--text-2);font-weight:600">${escapeHtml(crel || 'Family')} · ${methodLabel(method)}</div>
+          <div style="font-size:12px;color:var(--text-3);font-weight:600">${escapeHtml(method === 'whatsapp' ? FarCore.formatPhone(obContact.phone) : obContact.email)}</div>
         </div>
       </div>`;
     goObStep(2);
@@ -411,7 +447,7 @@ function finishOnboarding() {
 function renderDashboard() {
   const user     = Storage.getUser();
   const contacts = Storage.getContacts();
-  const history  = Storage.getHistory();
+  const history  = Storage.getSentHistory();
   const templates= Storage.getTemplates();
 
   // ---- Streak ----
@@ -425,7 +461,8 @@ function renderDashboard() {
   const days = Storage.getDaysSinceLast();
   const banner = document.getElementById('missed-banner');
   banner.style.display = 'none';
-  if (days !== null && days >= 1) {
+  const settings = Storage.getSettings();
+  if (FarCore.shouldShowMissedBanner(days, Storage.tz(), settings.reminderTime)) {
     banner.style.display = 'flex';
     document.getElementById('missed-title').textContent = days === 1 ? 'You haven\'t checked in today' : `${days} days since your last check-in`;
     document.getElementById('missed-sub').textContent   = 'Your family will be glad to hear from you.';
@@ -479,7 +516,7 @@ function updateFamilyClock() {
   const contact = Storage.getContact(activeContactId);
   document.getElementById('family-tz-label').textContent = contact ? contact.name : 'Family';
   const famTz = (contact && contact.timezone) || user.familyTimezone || 'Asia/Dhaka';
-  startClocks(user.myTimezone || 'America/Toronto', famTz);
+  startClocks(Storage.tz(), famTz);
 }
 
 function renderContactTabs(contacts) {
@@ -528,6 +565,7 @@ function startClocks(myTz, famTz) {
     document.getElementById('my-date').textContent  = my.date;
     document.getElementById('fam-time').textContent = fam.time;
     document.getElementById('fam-date').textContent = fam.date;
+    document.getElementById('fam-hint').textContent = FarCore.familyTimeHint(famTz);
   }
   tick();
   tzInterval = setInterval(tick, 10000);
@@ -549,6 +587,8 @@ function openCheckinSheet(tplIndex = 0) {
   const contact   = Storage.getContact(activeContactId) || contacts[0];
   ciTplIndex      = templates[tplIndex] ? tplIndex : 0;
   selectedTplText = templates[ciTplIndex].text;
+  const famTz     = contact.timezone || Storage.getUser().familyTimezone;
+  const hint      = FarCore.familyTimeHint(famTz);
   selectedMethod  = contact.preferredMethod || 'whatsapp';
 
   // Contact row
@@ -556,7 +596,8 @@ function openCheckinSheet(tplIndex = 0) {
     <div class="avatar avatar-md ${avatarColor(contact.name)}">${initials(contact.name)}</div>
     <div class="cc-info">
       <h3>${escapeHtml(contact.name)}</h3>
-      <p>${escapeHtml(contact.relationship || 'Family')} · ${escapeHtml(contact.timezone || '')}</p>
+      <p>${escapeHtml(contact.relationship || 'Family')} · ${escapeHtml(tzLabel(famTz))}</p>
+      ${hint ? `<p class="fam-hint">${escapeHtml(hint)}</p>` : ''}
     </div>`;
 
   // Template chips
@@ -565,8 +606,8 @@ function openCheckinSheet(tplIndex = 0) {
     <button class="chip ${i===ciTplIndex?'selected':''}" onclick="selectCiTpl(${i}, this)">${escapeHtml(shortText(t.text, 22))}</button>
   `).join('');
 
-  // Message preview
-  document.getElementById('ci-msg-preview').textContent = selectedTplText;
+  // Editable message
+  document.getElementById('ci-msg-preview').value = selectedTplText;
 
   // Method buttons
   buildMethodBtns(contact);
@@ -584,16 +625,11 @@ function openTplCheckin(tplId) {
 function selectCiTpl(idx, btn) {
   ciTplIndex = idx;
   const templates = Storage.getTemplates();
+  if (!templates[idx]) return;
   selectedTplText = templates[idx].text;
-  document.getElementById('ci-msg-preview').textContent = selectedTplText;
+  document.getElementById('ci-msg-preview').value = selectedTplText;
   document.querySelectorAll('#ci-tpl-chips .chip').forEach(c => c.classList.remove('selected'));
   btn.classList.add('selected');
-}
-
-function cycleTemplate() {
-  const templates = Storage.getTemplates();
-  ciTplIndex      = (ciTplIndex + 1) % templates.length;
-  selectCiTpl(ciTplIndex, document.querySelectorAll('#ci-tpl-chips .chip')[ciTplIndex]);
 }
 
 function buildMethodBtns(contact) {
@@ -623,26 +659,16 @@ function setMethod(method, btn) {
 function confirmCheckin() {
   const contact = Storage.getContact(activeContactId) || Storage.getContacts()[0];
   if (!contact) return;
-  const msg = selectedTplText || Storage.getTemplates()[0].text;
+  const msg = document.getElementById('ci-msg-preview').value.trim();
+  if (!msg) { showToast('Write a message first', 'error'); return; }
 
-  if (selectedMethod === 'whatsapp') {
-    const phone = (contact.phone || '').replace(/\D/g,'');
-    if (!phone) { showToast('No WhatsApp number saved', 'error'); return; }
-    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
-  } else {
-    const email = contact.email;
-    if (!email) { showToast('No email address saved', 'error'); return; }
-    window.location.href = `mailto:${email}?subject=${encodeURIComponent('FarCare Check-In')}&body=${encodeURIComponent(msg)}`;
-  }
+  // Catch a bad number or address while the sheet is still open
+  const link = FarCore.buildSendUrl(selectedMethod, contact, msg);
+  if (!link.ok) { showToast(link.error + '. Edit the contact to fix it.', 'error'); return; }
 
-  // Save to history
-  Storage.addHistory({ contactId: contact.id, contactName: contact.name, message: msg, method: selectedMethod });
-
+  // Opens WhatsApp or email, saves the check-in as pending, then asks "Did it send?"
   closeSheet('checkin-overlay');
-  showToast(selectedMethod === 'whatsapp' ? 'WhatsApp opened, tap Send there' : 'Email opened, tap Send there', 'success');
-
-  // Refresh dashboard
-  setTimeout(renderDashboard, 400);
+  sendCheckin(contact, msg, selectedMethod, renderDashboard);
 }
 
 /* ---- All-templates sheet ---- */
